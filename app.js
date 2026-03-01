@@ -778,7 +778,7 @@ document.getElementById('formVenta').addEventListener('submit', async function(e
     cantidadCuotas: parseInt(document.getElementById('ventaCuotas').value)||0,
     diasPrimeraCuota: parseInt(document.getElementById('ventaDias').value)||30,
     garantiaMeses: parseInt(document.getElementById('ventaGarantia').value)||0,
-    fechaVenta: document.getElementById('ventaFenta').value || new Date().toISOString(),
+    fechaVenta: document.getElementById('fechaVenta').value || new Date().toISOString(),
     vendedor: APP.user.nombre
   };
   const result = await saveVentaAPI(datos);
