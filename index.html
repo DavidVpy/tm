@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>TECH MARKET - Sistema de Ventas</title>
+<script src="config.js"></script>
+<script src="api-client.js"></script>
+<style>
+:root{--primary:#0f172a;--primary-light:#1e293b;--accent:#3b82f6;--accent-dark:#2563eb;--success:#10b981;--danger:#ef4444;--warning:#f59e0b;--bg:#f8fafc;--white:#ffffff;--text:#1e293b;--muted:#64748b;--border:#e2e8f0;--shadow:0 1px 3px rgba(0,0,0,0.1);}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);}
+.hidden{display:none!important;}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+
+/* LOGIN */
+#loginPage{background:linear-gradient(135deg,var(--primary) 0%,var(--primary-light) 100%);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;}
+.login-box{background:var(--white);border-radius:20px;padding:40px;width:100%;max-width:420px;box-shadow:0 20px 60px rgba(0,0,0,0.3);}
+.logo{text-align:center;margin-bottom:30px;}
+.logo h1{font-size:56px;font-weight:900;background:linear-gradient(135deg,var(--accent),var(--accent-dark));-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.logo p{color:var(--muted);font-size:14px;margin-top:8px;}
+
+/* FORMS */
+.form-group{margin-bottom:20px;}
+label{display:block;color:var(--text);font-weight:600;margin-bottom:8px;font-size:14px;}
+input,select,textarea{width:100%;padding:14px;border:2px solid var(--border);border-radius:12px;font-size:15px;font-family:inherit;transition:all 0.2s;background:white;}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(59,130,246,0.1);}
+input[type="password"]{letter-spacing:4px;font-size:24px;text-align:center;}
+.btn{width:100%;padding:16px;background:linear-gradient(135deg,var(--accent),var(--accent-dark));color:white;border:none;border-radius:12px;font-size:16px;font-weight:600;cursor:pointer;transition:transform 0.2s;}
+.btn:hover{transform:translateY(-1px);}
+.btn:disabled{opacity:0.6;cursor:not-allowed;transform:none;}
+.btn-secondary{background:var(--muted)!important;}
+.btn-success{background:var(--success)!important;}
+.btn-danger{background:var(--danger)!important;}
+.btn-delete{background:var(--danger);color:white;border:none;padding:8px 12px;border-radius:8px;cursor:pointer;}
+.error{background:#fee;color:#c33;padding:14px;border-radius:12px;margin-bottom:20px;font-size:14px;text-align:center;display:none;}
+.error.show{display:block;}
+
+/* HEADER */
+.header{background:linear-gradient(135deg,var(--primary),var(--primary-light));color:white;padding:20px;box-shadow:0 2px 10px rgba(0,0,0,0.1);position:sticky;top:0;z-index:100;}
+.header-inner{max-width:1200px;margin:0 auto;display:flex;justify-content:space-between;align-items:center;}
+.header h1{font-size:28px;font-weight:900;}
+.user-name{font-size:16px;font-weight:600;}
+.user-role{font-size:13px;opacity:0.8;margin-top:2px;}
+.btn-logout{background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.2);color:white;padding:10px 16px;border-radius:10px;font-size:13px;cursor:pointer;margin-top:8px;}
+
+/* CONTAINER */
+.container{padding:20px;max-width:1200px;margin:0 auto;}
+
+/* STATS */
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:15px;margin-bottom:30px;}
+.stat-card{background:var(--white);padding:16px 20px;border-radius:12px;box-shadow:var(--shadow);min-height:85px;display:flex;flex-direction:column;justify-content:space-between;}
+.stat-label{font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:0.3px;}
+.stat-value{font-size:22px;font-weight:700;margin-top:6px;line-height:1.2;}
+
+/* MENU */
+.menu-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:15px;}
+.menu-btn{background:var(--white);border:none;padding:30px 20px;border-radius:16px;cursor:pointer;box-shadow:var(--shadow);transition:all 0.2s;text-align:center;}
+.menu-btn:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,0,0,0.15);}
+.menu-icon{font-size:36px;margin-bottom:10px;}
+.menu-label{font-size:15px;font-weight:600;color:var(--text);}
+
+/* CARDS */
+.card{background:var(--white);padding:18px;border-radius:14px;margin-bottom:12px;box-shadow:var(--shadow);cursor:pointer;transition:all 0.2s;}
+.card:hover{transform:translateX(4px);box-shadow:0 4px 12px rgba(0,0,0,0.12);}
+.card.alert{border-left:4px solid var(--danger);}
+.card-title{font-size:17px;font-weight:700;color:var(--text);margin-bottom:6px;}
+.card-alias{font-size:14px;color:var(--accent);font-style:italic;margin-bottom:4px;}
+.card-info{font-size:14px;color:var(--muted);margin-bottom:3px;}
+
+/* SEARCH */
+.search-box{background:var(--white);padding:16px;border-radius:14px;margin-bottom:20px;box-shadow:var(--shadow);}
+
+/* BADGES */
+.badge{display:inline-block;padding:4px 10px;border-radius:8px;font-size:12px;font-weight:700;}
+.badge-ok{background:#d1fae5;color:#065f46;}
+.badge-warning{background:#fef3c7;color:#92400e;}
+.badge-danger{background:#fee2e2;color:#991b1b;}
+
+/* BTN ADD */
+.btn-add{position:fixed;bottom:30px;right:30px;width:64px;height:64px;background:linear-gradient(135deg,var(--accent),var(--accent-dark));color:white;border:none;border-radius:50%;font-size:28px;box-shadow:0 8px 20px rgba(59,130,246,0.4);cursor:pointer;transition:transform 0.2s;}
+.btn-add:hover{transform:scale(1.1);}
+
+/* LOADING / EMPTY */
+.loading{text-align:center;padding:60px 20px;color:var(--muted);}
+.empty{text-align:center;padding:60px 20px;color:var(--muted);font-size:15px;background:var(--white);border-radius:14px;}
+
+/* DETAIL */
+.detail-header{background:var(--white);padding:24px;border-radius:16px;margin-bottom:20px;box-shadow:var(--shadow);}
+.detail-title{font-size:24px;font-weight:800;margin-bottom:6px;}
+.detail-subtitle{font-size:15px;color:var(--muted);}
+.info-row{display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--border);}
+.info-row:last-child{border-bottom:none;}
+.info-label{font-size:14px;color:var(--muted);font-weight:600;}
+.info-value{font-size:15px;color:var(--text);font-weight:500;text-align:right;}
+.wa-btn{display:flex;align-items:center;gap:8px;background:#25D366;color:white;padding:14px 20px;border-radius:12px;text-decoration:none;font-weight:600;font-size:15px;justify-content:center;}
+
+/* CARRITO */
+.carrito-item{background:var(--bg);padding:14px;border-radius:12px;margin-bottom:8px;}
+.item-desc{font-weight:600;margin-bottom:6px;}
+.item-info{display:flex;justify-content:space-between;align-items:center;font-size:14px;color:var(--muted);}
+.carrito-total{background:var(--white);padding:20px;border-radius:14px;margin-top:20px;text-align:right;font-size:20px;font-weight:800;box-shadow:var(--shadow);}
+
+/* RESPONSIVE */
+@media(max-width:768px){
+  .stats-grid{grid-template-columns:1fr 1fr;}
+  .menu-grid{grid-template-columns:1fr 1fr;}
+  .header h1{font-size:22px;}
+  .btn-add{bottom:20px;right:20px;width:56px;height:56px;font-size:24px;}
+}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="loginPage">
+  <div class="login-box">
+    <div class="logo"><h1>TM</h1><p>Sistema de Ventas</p></div>
+    <div class="error" id="errorMsg"></div>
+    <form id="loginForm">
+      <div class="form-group">
+        <label>Usuario</label>
+        <select id="usuario" required><option value="">Selecciona usuario...</option></select>
+      </div>
+      <div class="form-group">
+        <label>PIN (4 dígitos)</label>
+        <input type="password" id="pin" maxlength="4" placeholder="••••" required>
+      </div>
+      <button type="submit" class="btn">Ingresar</button>
+    </form>
+  </div>
+</div>
+
+<!-- DASHBOARD -->
+<div id="dashboardPage" class="hidden">
+  <div class="header">
+    <div class="header-inner">
+      <h1>TM</h1>
+      <div style="text-align:right;">
+        <div class="user-name" id="userName"></div>
+        <div class="user-role" id="userRole"></div>
+        <button class="btn-logout" onclick="logout()">Salir</button>
+      </div>
+    </div>
+  </div>
+  <div class="container">
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-label">Ventas Hoy</div><div class="stat-value" id="statVentasHoy">0</div></div>
+      <div class="stat-card"><div class="stat-label">Cobros Hoy</div><div class="stat-value" id="statCobrosHoy">0</div></div>
+      <div class="stat-card"><div class="stat-label">Cuotas Vencidas</div><div class="stat-value" id="statCuotasVencidas">0</div></div>
+      <div class="stat-card"><div class="stat-label">💰 Ventas Este Mes</div><div class="stat-value" id="statVentasMes">GS. 0</div></div>
+      <div class="stat-card"><div class="stat-label">📊 Créditos Activos</div><div class="stat-value" id="statCreditosActivos">0</div></div>
+    </div>
+    <div class="menu-grid">
+      <button class="menu-btn" onclick="showClientes()"><div class="menu-icon">👥</div><div class="menu-label">Clientes</div></button>
+      <button class="menu-btn" onclick="showVentas()"><div class="menu-icon">🛒</div><div class="menu-label">Nueva Venta</div></button>
+      <button class="menu-btn" onclick="showListadoVentas()"><div class="menu-icon">📋</div><div class="menu-label">Ventas</div></button>
+      <button class="menu-btn" onclick="showCobranzas()"><div class="menu-icon">💰</div><div class="menu-label">Cobranzas</div></button>
+      <button class="menu-btn" onclick="toast('Próximamente','info')"><div class="menu-icon">📊</div><div class="menu-label">Reportes</div></button>
+    </div>
+  </div>
+</div>
+
+<!-- CLIENTES -->
+<div id="clientesPage" class="hidden">
+  <div class="header">
+    <div class="header-inner">
+      <button class="btn-logout" onclick="showDashboard()">← Volver</button>
+      <h1>Clientes</h1>
+      <div style="width:80px;"></div>
+    </div>
+  </div>
+  <div class="container">
+    <div class="search-box">
+      <input type="text" id="searchClientes" placeholder="🔍 Buscar por nombre, CI o apodo...">
+    </div>
+    <div id="listaClientes"></div>
+    <button class="btn-add" onclick="showFormCliente()">+</button>
+  </div>
+</div>
+
+<!-- FORM CLIENTE -->
+<div id="formClientePage" class="hidden">
+  <div class="header">
+    <div class="header-inner">
+      <button class="btn-logout" onclick="showClientes()">← Cancelar</button>
+      <h1 id="tituloFormCliente">Nuevo Cliente</h1>
+      <div style="width:80px;"></div>
+    </div>
+  </div>
+  <div class="container">
+    <div style="background:var(--white);padding:24px;border-radius:16px;box-shadow:var(--shadow);">
+      <form id="formCliente">
+        <div class="form-group"><label>CI/RUC *</label><input type="text" id="ciRuc" required></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:15px;">
+          <div class="form-group"><label>Nombres *</label><input type="text" id="nombres" required></div>
+          <div class="form-group"><label>Apellidos *</label><input type="text" id="apellidos" required></div>
+        </div>
+        <div class="form-group">
+          <label>Teléfono</label>
+          <input type="tel" id="telefono" maxlength="12" placeholder="09XX-XXX-XXX">
+          <div style="font-size:12px;color:var(--muted);margin-top:4px;">Se formatea automáticamente. Empieza con 09.</div>
+        </div>
+        <div class="form-group"><label>Dirección</label><input type="text" id="direccion"></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:15px;">
+          <div class="form-group">
+            <label>Ciudad</label>
+            <select id="ciudadSelect">
+              <option value="">SELECCIONAR CIUDAD...</option>
+              <option value="ASUNCIÓN">ASUNCIÓN</option>
+              <option value="FERNANDO DE LA MORA">FERNANDO DE LA MORA</option>
+              <option value="LAMBARÉ">LAMBARÉ</option>
+              <option value="LUQUE">LUQUE</option>
+              <option value="SAN LORENZO">SAN LORENZO</option>
+              <option value="CAPIATÁ">CAPIATÁ</option>
+              <option value="LIMPIO">LIMPIO</option>
+              <option value="ÑEMBY">ÑEMBY</option>
+              <option value="VILLA ELISA">VILLA ELISA</option>
+              <option value="MARIANO ROQUE ALONSO">MARIANO ROQUE ALONSO</option>
+              <option value="ITAUGUÁ">ITAUGUÁ</option>
+              <option value="AREGUÁ">AREGUÁ</option>
+              <option value="YPACARAÍ">YPACARAÍ</option>
+              <option value="CAACUPÉ">CAACUPÉ</option>
+              <option value="PARAGUARÍ">PARAGUARÍ</option>
+              <option value="VILLETA">VILLETA</option>
+              <option value="SAN ANTONIO">SAN ANTONIO</option>
+              <option value="YPANÉ">YPANÉ</option>
+              <option value="CIUDAD DEL ESTE">CIUDAD DEL ESTE</option>
+              <option value="PRESIDENTE FRANCO">PRESIDENTE FRANCO</option>
+              <option value="HERNANDARIAS">HERNANDARIAS</option>
+              <option value="MINGA GUAZÚ">MINGA GUAZÚ</option>
+              <option value="ENCARNACIÓN">ENCARNACIÓN</option>
+              <option value="CORONEL OVIEDO">CORONEL OVIEDO</option>
+              <option value="CONCEPCIÓN">CONCEPCIÓN</option>
+              <option value="PEDRO JUAN CABALLERO">PEDRO JUAN CABALLERO</option>
+              <option value="OTRO">OTRO</option>
+            </select>
+          </div>
+          <div class="form-group"><label>Barrio</label><input type="text" id="barrio"></div>
+        </div>
+        <div class="form-group" id="ciudadOtroDiv" style="display:none;">
+          <label>Escribí la ciudad</label>
+          <input type="text" id="ciudadOtro" placeholder="Nombre de la ciudad">
+        </div>
+        <div class="form-group"><label>Referencia</label><textarea id="referencia" rows="2"></textarea></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:15px;">
+          <div class="form-group"><label>GPS Lat</label><input type="text" id="gpsLat" placeholder="SE LLENA CON BOTÓN GPS"></div>
+          <div class="form-group"><label>GPS Lng</label><input type="text" id="gpsLng" placeholder="SE LLENA CON BOTÓN GPS"></div>
+          <div id="gpsPreview" style="display:none;margin-top:8px;padding:8px 12px;background:var(--bg);border-radius:10px;"></div>
+        </div>
+        <button type="button" onclick="obtenerGPS()" class="btn btn-secondary" style="margin-bottom:20px;">📍 Obtener GPS automático</button>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:15px;">
+          <div class="form-group"><label>Alias / Apodo</label><input type="text" id="alias"></div>
+          <div class="form-group"><label>Recomendado por</label><input type="text" id="recomendadoPor"></div>
+        </div>
+        <div style="display:flex;gap:10px;margin-top:20px;">
+          <button type="button" onclick="showClientes()" class="btn btn-secondary">Cancelar</button>
+          <button type="submit" class="btn btn-success">Guardar Cliente</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- DETALLE CLIENTE -->
+<div id="detalleClientePage" class="hidden">
+  <div class="header">
+    <div class="header-inner">
+      <button class="btn-logout" onclick="showClientes()">← Volver</button>
+      <h1>Cliente</h1>
+      <div style="width:80px;"></div>
+    </div>
+  </div>
+  <div class="container">
+    <div class="detail-header">
+      <div class="detail-title" id="detalleNombre"></div>
+      <div class="detail-subtitle" id="detalleCiRuc"></div>
+    </div>
+
+    <div style="background:var(--white);padding:24px;border-radius:16px;box-shadow:var(--shadow);margin-bottom:20px;">
+      <h3 style="margin-bottom:16px;font-size:14px;color:var(--muted);text-transform:uppercase;">Contacto</h3>
+      <div class="info-row"><span class="info-label">Teléfono</span><span class="info-value" id="detalleTelefono"></span></div>
+      <div class="info-row"><span class="info-label">Dirección</span><span class="info-value" id="detalleDireccion"></span></div>
+      <div class="info-row"><span class="info-label">Ciudad / Barrio</span><span class="info-value" id="detalleCiudad"></span></div>
+
+      <div style="display:flex;gap:10px;margin-top:16px;flex-wrap:wrap;">
+        <a id="detalleWhatsapp" href="#" target="_blank" class="wa-btn" style="flex:1;min-width:160px;">
+          <span style="font-size:20px;">💬</span> WhatsApp
+        </a>
+        <button onclick="nuevaVentaDesdeCliente()" class="btn" style="flex:1;min-width:160px;">🛒 Nueva Venta</button>
+        <button onclick="editarCliente()" class="btn btn-secondary" style="flex:1;min-width:160px;">✏️ Editar</button>
+      </div>
+    </div>
+
+    <div style="background:var(--white);padding:24px;border-radius:16px;box-shadow:var(--shadow);">
+      <h3 style="margin-bottom:16px;font-size:14px;color:var(--muted);text-transform:uppercase;">Historial de Compras</h3>
+      <div id="ventasCliente"></div>
+    </div>
+  </div>
+</div>
+
+<!-- VENTAS -->
+<div id="ventasPage" class="hidden">
+  <div class="header">
+    <div class="header-inner">
+      <button class="btn-logout" onclick="showDashboard()">← Volver</button>
+      <h1>Nueva Venta</h1>
+      <div style="width:80px;"></div>
+    </div>
+  </div>
+  <div class="container">
+    <div style="background:var(--white);padding:24px;border-radius:16px;box-shadow:var(--shadow);margin-bottom:20px;">
+      <h3 style="margin-bottom:12px;">Cliente</h3>
+      <input type="text" id="ventaClienteBusca" placeholder="BUSCAR POR NOMBRE, CI O ALIAS..." style="width:100%;padding:14px;border:2px solid var(--border);border-radius:12px;font-size:15px;box-sizing:border-box;">
+      <input type="hidden" id="ventaClienteId">
+      <input type="hidden" id="ventaClienteNombreHidden">
+    </div>
+    <div style="background:var(--white);padding:24px;border-radius:16px;box-shadow:var(--shadow);margin-bottom:20px;">
+      <h3 style="margin-bottom:16px;">Agregar Producto</h3>
+      <div class="form-group"><label>Descripción</label><input type="text" id="itemDesc"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:15px;">
+        <div class="form-group"><label>Cantidad</label><input type="number" id="itemCantidad" value="1" min="1"></div>
+        <div class="form-group"><label>Precio venta</label><input type="number" id="itemPrecio" step="1000"></div>
+      </div>
+      <div class="form-group"><label>Costo (opcional, para informes de ganancia)</label><input type="number" id="itemCosto" step="1000" placeholder="0"></div>
+      <button onclick="agregarItemCarrito()" class="btn">+ Agregar al carrito</button>
+    </div>
+    <div style="background:var(--white);padding:24px;border-radius:16px;box-shadow:var(--shadow);margin-bottom:20px;">
+      <h3 style="margin-bottom:16px;">Carrito</h3>
+      <div id="carritoItems"></div>
+      <div class="carrito-total">Total: <span id="carritoTotal">Gs. 0</span></div>
+    </div>
+    <form id="formVenta" style="background:var(--white);padding:24px;border-radius:16px;box-shadow:var(--shadow);">
+      <h3 style="margin-bottom:16px;">Detalles de Pago</h3>
+      <input type="hidden" id="ventaTotalInput">
+      <div class="form-group"><label>📅 Fecha de la venta</label><input type="date" id="ventaFecha" style="width:100%;padding:14px;border:2px solid var(--border);border-radius:12px;font-size:15px;box-sizing:border-box;"></div>
+      <div class="form-group"><label>Entrega Inicial</label><input type="number" id="ventaEntrega" value="0" step="1000"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:15px;">
+        <div class="form-group"><label>Cantidad de Cuotas</label><input type="number" id="ventaCuotas" value="0" min="0"></div>
+        <div class="form-group"><label>Días 1ra Cuota</label><input type="number" id="ventaDias" value="30" min="1"></div>
+      </div>
+      <div class="form-group"><label>Garantía (meses)</label><input type="number" id="ventaGarantia" value="0" min="0"></div>
+      <button type="submit" class="btn btn-success">💾 Registrar Venta</button>
+    </form>
+  </div>
+</div>
+
+<!-- LISTADO VENTAS -->
+<div id="listadoVentasPage" class="hidden">
+  <div class="header">
+    <div class="header-inner">
+      <button class="btn-logout" onclick="showDashboard()">← VOLVER</button>
+      <h1>VENTAS</h1>
+      <div style="width:80px;"></div>
+    </div>
+  </div>
+  <div class="container">
+    <div style="background:var(--white);padding:16px 20px;border-radius:16px;box-shadow:var(--shadow);margin-bottom:16px;">
+      <input type="text" id="searchVentas" oninput="buscarVentas()" placeholder="BUSCAR POR PEDIDO, CLIENTE, PRODUCTO..." style="width:100%;padding:14px;border:2px solid var(--border);border-radius:12px;font-size:15px;box-sizing:border-box;">
+    </div>
+    <div id="todasVentas"></div>
+  </div>
+</div>
+
+<!-- COBRANZAS -->
+<div id="cobranzasPage" class="hidden">
+  <div class="header">
+    <div class="header-inner">
+      <button class="btn-logout" onclick="showDashboard()">← Volver</button>
+      <h1>Cobranzas</h1>
+      <div style="width:80px;"></div>
+    </div>
+  </div>
+  <div class="container">
+    <div style="background:var(--white);padding:24px;border-radius:16px;box-shadow:var(--shadow);margin-bottom:20px;">
+      <h3 style="margin-bottom:12px;">⚠️ Cuotas Vencidas</h3>
+      <div id="cuotasVencidas"></div>
+    </div>
+    <div style="background:var(--white);padding:24px;border-radius:16px;box-shadow:var(--shadow);margin-bottom:20px;">
+      <h3 style="margin-bottom:12px;">Buscar por Cliente</h3>
+      <input type="text" id="cobranzaClienteBusca" placeholder="BUSCAR POR NOMBRE, CI O ALIAS..." style="width:100%;padding:14px;border:2px solid var(--border);border-radius:12px;font-size:15px;box-sizing:border-box;">
+      <input type="hidden" id="cobranzaClienteId">
+      <input type="hidden" id="cobranzaClienteNombreHidden">
+      <button onclick="buscarClienteCobranza()" class="btn" style="margin-top:10px;width:100%;">🔍 Cargar cuotas</button>
+    </div>
+    <div id="selectorProducto"></div>
+    <div id="cuotasCliente"></div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
