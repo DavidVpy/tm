@@ -49,9 +49,9 @@ input[type="password"]{letter-spacing:4px;font-size:24px;text-align:center;}
 
 /* STATS */
 .stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:15px;margin-bottom:30px;}
-.stat-card{background:var(--white);padding:24px;border-radius:16px;box-shadow:var(--shadow);}
-.stat-label{font-size:13px;color:var(--muted);font-weight:600;text-transform:uppercase;margin-bottom:8px;}
-.stat-value{font-size:32px;font-weight:800;}
+.stat-card{background:var(--white);padding:16px 20px;border-radius:12px;box-shadow:var(--shadow);min-height:85px;display:flex;flex-direction:column;justify-content:space-between;}
+.stat-label{font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:0.3px;}
+.stat-value{font-size:22px;font-weight:700;margin-top:6px;line-height:1.2;}
 
 /* MENU */
 .menu-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:15px;}
@@ -383,6 +383,7 @@ input[type="password"]{letter-spacing:4px;font-size:24px;text-align:center;}
       <input type="hidden" id="cobranzaClienteNombreHidden">
       <button onclick="buscarClienteCobranza()" class="btn" style="margin-top:10px;width:100%;">🔍 Cargar cuotas</button>
     </div>
+    <div id="selectorProducto"></div>
     <div id="cuotasCliente"></div>
   </div>
 </div>
