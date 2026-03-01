@@ -1479,35 +1479,6 @@ function obtenerGPS() {
     { enableHighAccuracy:true, timeout:15000, maximumAge:0 }
   );
 }
-document.getElementById('formCliente').addEventListener('submit', async function(e){
-  e.preventDefault();
-  const ciudadSel = document.getElementById('ciudadSelect').value;
-  const ciudadFinal = ciudadSel==='OTRO' ? mayus(document.getElementById('ciudadOtro').value) : ciudadSel;
-  const tel = document.getElementById('telefono').value;
-  const datos = {
-    ciRuc: mayus(document.getElementById('ciRuc').value),
-    nombres: mayus(document.getElementById('nombres').value),
-    apellidos: mayus(document.getElementById('apellidos').value),
-    telefono: tel, telWhatsApp: formatTelWA(tel),
-    direccion: mayus(document.getElementById('direccion').value),
-    ciudad: ciudadFinal,
-    barrio: mayus(document.getElementById('barrio').value),
-    referencia: mayus(document.getElementById('referencia').value),
-    gpsLat: document.getElementById('gpsLat').value,
-    gpsLng: document.getElementById('gpsLng').value,
-    alias: mayus(document.getElementById('alias').value),
-    recomendadoPor: mayus(document.getElementById('recomendadoPor').value)
-  };
-  const btn = this.querySelector('button[type=submit]');
-  btn.disabled=true; btn.textContent='GUARDANDO...';
-  showLoader('GUARDANDO CLIENTE...');
-  let result;
-  if (APP.modoEdicion) { datos.id=APP.clienteActual.ID_Cliente; result=await updateClienteAPI(datos); }
-  else result = await saveClienteAPI(datos);
-  hideLoader(); btn.disabled=false; btn.textContent='GUARDAR CLIENTE';
-  if (result.success) { mostrarConfirmacion(APP.modoEdicion?'CLIENTE ACTUALIZADO':'CLIENTE GUARDADO'); setTimeout(()=>showClientes(),1800); }
-  else toast(result.error,'error',4000);
-});
 function editarCliente() {
   hideAll();
   document.getElementById('formClientePage').classList.remove('hidden');
