@@ -1,13 +1,12 @@
 // ============================================
-// TECH MARKET - Backend v1.6
-// Fix: SHEET_ID correcto, USUARIOS 3 cols, CLIENTES 12 cols
-//      DETALLE headers completos, PAGOS con ID_Transaccion
+// TECH MARKET - Backend v1.5
+// Fix: productos en historial, ajuste cuotas, stats mejoradas
 // ============================================
 
 const SHEET_ID = '1OcuZ21Ll3sg2rY_Xj0UUuWfQbP0CW5FyI2RlHLYfxxA';
 
 function doGet(e) {
-  if (!e || !e.parameter) return HtmlService.createHtmlOutput('<h2>TECH MARKET API v1.6</h2>');
+  if (!e || !e.parameter) return HtmlService.createHtmlOutput('<h2>TECH MARKET API v1.5</h2>');
   const action = e.parameter.action;
   const callback = e.parameter.callback || '';
   if (action === 'getTicket') return getTicketJSON(e.parameter.ticketId);
@@ -64,13 +63,10 @@ function guardarTicketTemp(ticketId, jsonData) {
     let sheet = ss.getSheetByName('TICKETS_TEMP');
     if (!sheet) {
       sheet = ss.insertSheet('TICKETS_TEMP');
-      sheet.getRange(1,1,1,3).setValues([['Ticket_ID','JSON_Data','Timestamp']]);
+      sheet.getRange(1,1,1,3).setValues([['ID_Ticket','JSON_Data','Fecha']]);
     }
     const rows = sheet.getDataRange().getValues();
-    const ahoraMs = new Date().getTime();
-    for (let i = rows.length - 1; i >= 1; i--) {
-      if (rows[i][2] && (ahoraMs - new Date(rows[i][2]).getTime()) > 3600000) sheet.deleteRow(i + 1);
-    }
+    // No se borran tickets - se conservan para reimpresion del historial
     sheet.appendRow([ticketId, jsonData, new Date()]);
     return true;
   } catch(e) { Logger.log('Error guardarTicketTemp: ' + e); return false; }
@@ -119,19 +115,16 @@ function createJsonResponse_(data, callback) {
   return output;
 }
 
-// ============================================
-// USUARIOS - Estructura: [Nombre, PIN, Rol] → col 0, 1, 2
-// ============================================
 function getUsuarios() {
   try {
     const sheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName('USUARIOS');
     const data = sheet.getDataRange().getValues();
     const usuarios = [];
     for (let i = 1; i < data.length; i++) {
-      if (data[i][0]) usuarios.push({ nombre: String(data[i][0]), rol: String(data[i][2]) });
+      if (data[i][4] === true) usuarios.push({ nombre: data[i][1], rol: data[i][3] });
     }
     return usuarios;
-  } catch (e) { Logger.log('Error getUsuarios: ' + e); return []; }
+  } catch (e) { return []; }
 }
 
 function validarUsuario(data) {
@@ -140,21 +133,14 @@ function validarUsuario(data) {
     const sheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName('USUARIOS');
     const rows = sheet.getDataRange().getValues();
     for (let i = 1; i < rows.length; i++) {
-      if (String(rows[i][0]) === String(data.nombre) && String(rows[i][1]) === String(data.pin)) {
-        return { success: true, data: { id: i, nombre: String(rows[i][0]), rol: String(rows[i][2]) } };
+      if (rows[i][1] === data.nombre && String(rows[i][2]) === String(data.pin) && rows[i][4] === true) {
+        return { success: true, data: { id: rows[i][0], nombre: rows[i][1], rol: rows[i][3] } };
       }
     }
     return { success: false, error: 'USUARIO O PIN INCORRECTOS' };
   } catch (e) { return { success: false, error: e.toString().toUpperCase() }; }
 }
 
-// ============================================
-// CLIENTES - Estructura 12 cols:
-// [ID_Cliente, CI_RUC, Nombres, Apellidos, Telefono, Email,
-//  Direccion, Ciudad, Latitud, Longitud, Alias, Fecha_Registro]
-//  col: 0       1       2        3          4      5
-//       6         7       8        9         10     11
-// ============================================
 function getClientes() {
   try {
     const sheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName('CLIENTES');
@@ -163,24 +149,19 @@ function getClientes() {
     for (let i = 1; i < data.length; i++) {
       if (data[i][0]) {
         clientes.push({
-          ID_Cliente:     data[i][0],
-          CI_RUC:         String(data[i][1]).toUpperCase(),
-          Nombres:        String(data[i][2]).toUpperCase(),
-          Apellidos:      String(data[i][3]).toUpperCase(),
-          Telefono:       data[i][4],
-          Tel_WhatsApp:   data[i][5],
-          Direccion:      String(data[i][6]||'').toUpperCase(),
-          Ciudad:         String(data[i][7]||'').toUpperCase(),
-          GPS_Lat:        data[i][8],
-          GPS_Lng:        data[i][9],
-          Alias:          String(data[i][10]||'').toUpperCase(),
-          Fecha_Registro: data[i][11],
-          Estado:         'ACTIVO'
+          ID_Cliente: data[i][0], CI_RUC: String(data[i][1]).toUpperCase(),
+          Nombres: String(data[i][2]).toUpperCase(), Apellidos: String(data[i][3]).toUpperCase(),
+          Telefono: data[i][4], Tel_WhatsApp: data[i][5],
+          Direccion: String(data[i][6]||'').toUpperCase(), Ciudad: String(data[i][7]||'').toUpperCase(),
+          Barrio: String(data[i][8]||'').toUpperCase(), Referencia: String(data[i][9]||'').toUpperCase(),
+          GPS_Lat: data[i][10], GPS_Lng: data[i][11],
+          Alias: String(data[i][12]||'').toUpperCase(), Recomendado_Por: String(data[i][13]||'').toUpperCase(),
+          Fecha_Registro: data[i][14], Estado: data[i][15]
         });
       }
     }
     return clientes;
-  } catch (e) { Logger.log('Error getClientes: ' + e); return []; }
+  } catch (e) { return []; }
 }
 
 function saveCliente(data) {
@@ -195,18 +176,11 @@ function saveCliente(data) {
     }
     const telWA = data.telWhatsApp || (data.telefono ? '595' + data.telefono.replace(/-/g, '').substring(1) : '');
     sheet.appendRow([
-      nuevoId,
-      String(data.ciRuc).toUpperCase(),
-      String(data.nombres).toUpperCase(),
-      String(data.apellidos).toUpperCase(),
-      data.telefono || '',
-      telWA,
-      String(data.direccion||'').toUpperCase(),
-      String(data.ciudad||'').toUpperCase(),
-      data.gpsLat || '',
-      data.gpsLng || '',
-      String(data.alias||'').toUpperCase(),
-      new Date()
+      nuevoId, String(data.ciRuc).toUpperCase(), String(data.nombres).toUpperCase(), String(data.apellidos).toUpperCase(),
+      data.telefono || '', telWA, String(data.direccion||'').toUpperCase(), String(data.ciudad||'').toUpperCase(),
+      String(data.barrio||'').toUpperCase(), String(data.referencia||'').toUpperCase(),
+      data.gpsLat || '', data.gpsLng || '', String(data.alias||'').toUpperCase(),
+      String(data.recomendadoPor||'').toUpperCase(), new Date(), 'ACTIVO'
     ]);
     return { success: true, id: nuevoId };
   } catch (e) { return { success: false, error: e.toString() }; }
@@ -227,19 +201,16 @@ function updateCliente(data) {
     sheet.getRange(fila, 6).setValue(telWA);
     sheet.getRange(fila, 7).setValue(String(data.direccion||'').toUpperCase());
     sheet.getRange(fila, 8).setValue(String(data.ciudad||'').toUpperCase());
-    sheet.getRange(fila, 9).setValue(data.gpsLat || '');
-    sheet.getRange(fila, 10).setValue(data.gpsLng || '');
-    sheet.getRange(fila, 11).setValue(String(data.alias||'').toUpperCase());
+    sheet.getRange(fila, 9).setValue(String(data.barrio||'').toUpperCase());
+    sheet.getRange(fila, 10).setValue(String(data.referencia||'').toUpperCase());
+    sheet.getRange(fila, 11).setValue(data.gpsLat || '');
+    sheet.getRange(fila, 12).setValue(data.gpsLng || '');
     return { success: true };
   } catch (e) { return { success: false, error: e.toString() }; }
 }
 
 // ============================================
-// VENTAS - 20 cols
-// [ID_Venta, Numero_Pedido, Fecha_Venta, ID_Cliente, Cliente_Nombre,
-//  Total_Venta, Entrega_Inicial, Saldo_Financiar, Cantidad_Cuotas,
-//  Valor_Cuota, Ultima_Cuota, Fecha_Primera_Cuota, Dias_Primera_Cuota,
-//  Garantia_Meses, Estado, Saldo_Actual, Anulado, Motivo_Anulacion, Vendedor, Productos]
+// VENTAS - con ajuste de cuotas
 // ============================================
 function saveVenta(data) {
   try {
@@ -252,41 +223,42 @@ function saveVenta(data) {
     const entregaInicial = Math.ceil(parseFloat(data.entregaInicial) || 0);
     const saldoFinanciar = totalVenta - entregaInicial;
     const cantCuotas = parseInt(data.cantidadCuotas) || 0;
-
-    let valorCuotaBase = 0, ultimaCuota = 0;
+    
+    // Calcular cuotas redondeadas a miles, última cuota ajusta diferencia
+    let valorCuotaBase = 0;
+    let ultimaCuota = 0;
     if (cantCuotas > 0) {
       const cuotaExacta = saldoFinanciar / cantCuotas;
-      valorCuotaBase = Math.ceil(cuotaExacta / 1000) * 1000;
-      ultimaCuota = saldoFinanciar - (valorCuotaBase * (cantCuotas - 1));
+      valorCuotaBase = Math.ceil(cuotaExacta / 1000) * 1000; // Redondear a miles hacia arriba
+      const sumaCuotasNormales = valorCuotaBase * (cantCuotas - 1);
+      ultimaCuota = saldoFinanciar - sumaCuotasNormales;
     }
-
+    
     const fechaVenta = data.fechaVenta ? new Date(data.fechaVenta) : new Date();
     const diasPrimeraCuota = parseInt(data.diasPrimeraCuota) || 30;
     const fechaPrimeraCuota = new Date(fechaVenta);
     fechaPrimeraCuota.setDate(fechaPrimeraCuota.getDate() + diasPrimeraCuota);
-    const productosDesc = data.productos ? data.productos.map(p => String(p.descripcion).toUpperCase()).join(', ') : '';
-
+    
     sheetVentas.appendRow([
       idVenta, idVenta, fechaVenta, data.idCliente, String(data.nombreCliente).toUpperCase(),
       totalVenta, entregaInicial, saldoFinanciar, cantCuotas,
-      valorCuotaBase, ultimaCuota, fechaPrimeraCuota, diasPrimeraCuota,
-      parseInt(data.garantiaMeses) || 0, 'ACTIVA', saldoFinanciar,
-      false, '', String(data.vendedor).toUpperCase(), productosDesc
+      valorCuotaBase, diasPrimeraCuota, fechaPrimeraCuota,
+      parseInt(data.garantiaMeses) || 0, String(data.vendedor).toUpperCase(), 'ACTIVA', saldoFinanciar
     ]);
-
+    
     if (data.productos && data.productos.length > 0) {
       data.productos.forEach((prod, idx) => {
         const cant = parseInt(prod.cantidad) || 1;
         const precio = Math.ceil(parseFloat(prod.precio) || 0);
         const costo = Math.ceil(parseFloat(prod.costo) || 0);
-        const gananciaUnit = precio - costo;
+        const subtotal = precio * cant;
         sheetDetalle.appendRow([
           idVenta + '-' + (idx + 1), idVenta, String(prod.descripcion).toUpperCase(),
-          cant, precio, costo, gananciaUnit, gananciaUnit * cant
+          cant, precio, subtotal, costo, (precio - costo) * cant
         ]);
       });
     }
-
+    
     if (cantCuotas > 0) {
       for (let i = 0; i < cantCuotas; i++) {
         const fechaVenc = new Date(fechaPrimeraCuota);
@@ -295,27 +267,26 @@ function saveVenta(data) {
         sheetCuotas.appendRow([
           idVenta + '-C' + String(i + 1).padStart(2, '0'),
           idVenta, i + 1, cantCuotas, montoCuota,
-          fechaVenc, 0, montoCuota, 'PENDIENTE'
+          fechaVenc, 0, montoCuota, 'PENDIENTE', 0, 0
         ]);
       }
     }
-
+    
     if (entregaInicial > 0) {
       const sheetPagos = ss.getSheetByName('PAGOS');
       const codigoEntrega = 'ENT-' + Math.random().toString(36).substring(2, 10).toUpperCase();
-      const idTransaccionEntrega = 'TRX-ENT-' + Date.now().toString(36).toUpperCase();
       sheetPagos.appendRow([
         'PAGO-' + Date.now(), codigoEntrega, fechaVenta,
         data.idCliente, String(data.nombreCliente).toUpperCase(), idVenta,
         data.productos ? String(data.productos[0].descripcion).toUpperCase() : '',
         'ENTREGA', 0, cantCuotas, entregaInicial, saldoFinanciar, fechaPrimeraCuota,
-        false, '', String(data.vendedor).toUpperCase(), 'ACTIVO', idTransaccionEntrega
+        false, 0, String(data.vendedor).toUpperCase(), 'ACTIVO'
       ]);
     }
-
+    
     return {
       success: true, numeroPedido: idVenta, idVenta,
-      valorCuota: valorCuotaBase, ultimaCuota, saldoFinanciar,
+      valorCuota: valorCuotaBase, saldoFinanciar,
       fechaPrimeraCuota: fechaPrimeraCuota.toISOString(),
       fechaVenta: fechaVenta.toISOString()
     };
@@ -326,11 +297,20 @@ function getVentas() {
   try {
     const ss = SpreadsheetApp.openById(SHEET_ID);
     const ventasData = ss.getSheetByName('VENTAS').getDataRange().getValues();
+    const detalleData = ss.getSheetByName('DETALLE_PRODUCTOS').getDataRange().getValues();
     const cuotasData = ss.getSheetByName('CUOTAS').getDataRange().getValues();
     const ventas = [];
     for (let i = 1; i < ventasData.length; i++) {
-      if (ventasData[i][0] && String(ventasData[i][14]).toUpperCase() !== 'ANULADA') {
+      if (ventasData[i][0] && ventasData[i][14] !== 'ANULADA') {
         const idVenta = ventasData[i][0];
+        // Productos
+        const prods = [];
+        for (let j = 1; j < detalleData.length; j++) {
+          if (detalleData[j][1] === idVenta) {
+            prods.push(detalleData[j][2]);
+          }
+        }
+        // Saldo real
         let saldoReal = 0;
         for (let k = 1; k < cuotasData.length; k++) {
           if (cuotasData[k][1] === idVenta) {
@@ -344,23 +324,30 @@ function getVentas() {
           Cliente_Nombre: ventasData[i][4], Total_Venta: Math.ceil(ventasData[i][5]),
           Entrega_Inicial: Math.ceil(ventasData[i][6]), Cantidad_Cuotas: ventasData[i][8],
           Saldo_Actual: Math.ceil(saldoReal), Estado: ventasData[i][14],
-          Productos: String(ventasData[i][19]||'')
+          Productos: prods.join(', ')
         });
       }
     }
     return ventas;
-  } catch (e) { Logger.log('Error getVentas: ' + e); return []; }
+  } catch (e) { return []; }
 }
 
 function getVentasCliente(idCliente) {
   try {
     const ss = SpreadsheetApp.openById(SHEET_ID);
     const ventasData = ss.getSheetByName('VENTAS').getDataRange().getValues();
+    const detalleData = ss.getSheetByName('DETALLE_PRODUCTOS').getDataRange().getValues();
     const cuotasData = ss.getSheetByName('CUOTAS').getDataRange().getValues();
     const ventas = [];
     for (let i = 1; i < ventasData.length; i++) {
-      if (ventasData[i][3] === idCliente && String(ventasData[i][14]).toUpperCase() !== 'ANULADA') {
+      if (ventasData[i][3] === idCliente && ventasData[i][14] !== 'ANULADA') {
         const idVenta = ventasData[i][0];
+        // Productos
+        const prods = [];
+        for (let j = 1; j < detalleData.length; j++) {
+          if (detalleData[j][1] === idVenta) prods.push(detalleData[j][2]);
+        }
+        // Saldo real
         let saldoReal = 0;
         for (let k = 1; k < cuotasData.length; k++) {
           if (cuotasData[k][1] === idVenta) {
@@ -372,14 +359,14 @@ function getVentasCliente(idCliente) {
           ID_Venta: idVenta, Numero_Pedido: ventasData[i][1],
           Fecha_Venta: ventasData[i][2], Total_Venta: Math.ceil(ventasData[i][5]),
           Entrega_Inicial: Math.ceil(ventasData[i][6]), Saldo_Financiar: Math.ceil(ventasData[i][7]),
-          Cantidad_Cuotas: ventasData[i][8], Garantia_Meses: ventasData[i][13],
+          Cantidad_Cuotas: ventasData[i][8], Garantia_Meses: ventasData[i][12],
           Saldo_Actual: Math.ceil(saldoReal), Estado: ventasData[i][14],
-          Productos: String(ventasData[i][19]||'')
+          Productos: prods.join(', ')
         });
       }
     }
     return ventas;
-  } catch (e) { Logger.log('Error getVentasCliente: ' + e); return []; }
+  } catch (e) { return []; }
 }
 
 function getClientesConAtraso() {
@@ -391,11 +378,19 @@ function getClientesConAtraso() {
     const hoy = new Date();
     const ventaMap = {};
     for (let i = 1; i < ventasData.length; i++) {
-      if (ventasData[i][0]) ventaMap[ventasData[i][0]] = { idCliente: ventasData[i][3], nombreCliente: ventasData[i][4] };
+      if (ventasData[i][0]) {
+        ventaMap[ventasData[i][0]] = {
+          idCliente: ventasData[i][3], nombreCliente: ventasData[i][4]
+        };
+      }
     }
     const clienteMap = {};
     for (let i = 1; i < clientesData.length; i++) {
-      if (clientesData[i][0]) clienteMap[clientesData[i][0]] = { telefono: clientesData[i][4], telWA: clientesData[i][5] };
+      if (clientesData[i][0]) {
+        clienteMap[clientesData[i][0]] = {
+          telefono: clientesData[i][4], telWA: clientesData[i][5]
+        };
+      }
     }
     const resumen = {};
     for (let i = 1; i < cuotasData.length; i++) {
@@ -433,7 +428,7 @@ function getCuotasCliente(idCliente) {
     const cuotasData = ss.getSheetByName('CUOTAS').getDataRange().getValues();
     const ventasCliente = [];
     for (let i = 1; i < ventasData.length; i++) {
-      if (ventasData[i][3] === idCliente && String(ventasData[i][14]).toUpperCase() !== 'ANULADA') ventasCliente.push(ventasData[i][0]);
+      if (ventasData[i][3] === idCliente && ventasData[i][14] !== 'ANULADA') ventasCliente.push(ventasData[i][0]);
     }
     const cuotas = [];
     for (let i = 1; i < cuotasData.length; i++) {
@@ -448,89 +443,267 @@ function getCuotasCliente(idCliente) {
       }
     }
     return cuotas;
-  } catch (e) { Logger.log('Error getCuotasCliente: ' + e); return []; }
+  } catch (e) { return []; }
 }
 
-// ============================================
-// PAGOS - 18 cols con ID_Transaccion en col 18 (idx 17)
-// ============================================
 function registrarPago(data) {
   try {
     const ss = SpreadsheetApp.openById(SHEET_ID);
-    const sheetPagos = ss.getSheetByName('PAGOS');
-    const sheetCuotas = ss.getSheetByName('CUOTAS');
-    const sheetVentas = ss.getSheetByName('VENTAS');
-    const ts = Date.now().toString(36).toUpperCase();
-    const rnd = Math.random().toString(36).substring(2, 7).toUpperCase();
-    const codigoVerif = 'PAG-' + ts + '-' + rnd;
-    const idPago = 'PAGO-' + Date.now();
-    const idTransaccion = 'TRX-' + ts + '-' + rnd;
+    const sheetPagos   = ss.getSheetByName('PAGOS');
+    const sheetCuotas  = ss.getSheetByName('CUOTAS');
+    const sheetVentas  = ss.getSheetByName('VENTAS');
+    const idVenta      = data.idVenta;
+    const fechaPago    = data.fechaPago ? new Date(data.fechaPago) : new Date();
+    const cobrador     = String(data.cobrador || '').toUpperCase();
+    const nombreCliente = String(data.nombreCliente || '').toUpperCase();
 
-    const cuotasData = sheetCuotas.getDataRange().getValues();
-    let filaCuota = -1, cuotaActual = null;
-    for (let i = 1; i < cuotasData.length; i++) {
-      if (cuotasData[i][0] === data.idCuota) { filaCuota = i + 1; cuotaActual = cuotasData[i]; break; }
+    // Descripcion del producto
+    const sheetDetalle = ss.getSheetByName('DETALLE_PRODUCTOS');
+    const detalleData  = sheetDetalle.getDataRange().getValues();
+    let productoDesc   = '';
+    for (let i = 1; i < detalleData.length; i++) {
+      if (detalleData[i][1] === idVenta) { productoDesc = String(detalleData[i][2] || ''); break; }
     }
-    if (filaCuota === -1) return { success: false, error: 'CUOTA NO ENCONTRADA' };
 
-    const montoPagado = Math.ceil(parseFloat(data.montoPago));
-    const saldoActual = Math.ceil(parseFloat(cuotaActual[7]));
-    const nuevoSaldo = Math.max(0, saldoActual - montoPagado);
-    let nuevoEstado = 'PENDIENTE';
-    if (nuevoSaldo <= 0) nuevoEstado = 'PAGADA';
-    else if (montoPagado > 0) nuevoEstado = 'PARCIAL';
+    // Obtener CI/RUC del cliente para el ticket
+    let clienteDoc = '';
+    try {
+      const sheetClientes = ss.getSheetByName('CLIENTES');
+      const clientesData  = sheetClientes.getDataRange().getValues();
+      for (let i = 1; i < clientesData.length; i++) {
+        if (clientesData[i][0] === data.idCliente) { clienteDoc = String(clientesData[i][1] || ''); break; }
+      }
+    } catch(e2) {}
 
-    sheetCuotas.getRange(filaCuota, 7).setValue(Math.ceil(parseFloat(cuotaActual[6]) + montoPagado));
-    sheetCuotas.getRange(filaCuota, 8).setValue(nuevoSaldo);
-    sheetCuotas.getRange(filaCuota, 9).setValue(nuevoEstado);
+    // Cargar cuotas de esta venta ordenadas por numero
+    const cuotasData = sheetCuotas.getDataRange().getValues();
+    const todasCuotas = [];
+    for (let i = 1; i < cuotasData.length; i++) {
+      if (cuotasData[i][1] === idVenta) todasCuotas.push({ fila: i + 1, d: cuotasData[i] });
+    }
+    todasCuotas.sort((a, b) => parseInt(a.d[2]) - parseInt(b.d[2]));
+    const totalCuotas = todasCuotas.length > 0 ? todasCuotas[todasCuotas.length - 1].d[3] : 0;
 
-    const idVenta = data.idVenta;
-    const cuotasAct = sheetCuotas.getDataRange().getValues();
-    let saldoVenta = 0;
-    for (let i = 1; i < cuotasAct.length; i++) {
-      if (cuotasAct[i][1] === idVenta) {
-        const est = String(cuotasAct[i][8]).toUpperCase();
-        if (est === 'PENDIENTE' || est === 'PARCIAL') saldoVenta += Math.ceil(parseFloat(cuotasAct[i][7]) || 0);
+    // Encontrar cuota de inicio
+    const idxInicio = todasCuotas.findIndex(c => c.d[0] === data.idCuota);
+    if (idxInicio === -1) return { success: false, error: 'CUOTA NO ENCONTRADA' };
+
+    // Cuotas a procesar: desde la seleccionada, con saldo pendiente
+    const cuotasPendientes = [];
+    for (let i = idxInicio; i < todasCuotas.length; i++) {
+      const est = String(todasCuotas[i].d[8]).toUpperCase();
+      if (est !== 'PAGADA' && est !== 'ANULADA') cuotasPendientes.push(todasCuotas[i]);
+    }
+
+    let montoRestante = Math.ceil(parseFloat(data.montoPago));
+    const pagosGenerados = []; // {codigoVerif, numeroCuota, totalCuotas, montoPagado, ticketId}
+
+    // --- Procesar cuotas una a una ---
+    for (let idx = 0; idx < cuotasPendientes.length && montoRestante > 0; idx++) {
+      const cuota     = cuotasPendientes[idx];
+      const row       = cuota.d;
+      const fila      = cuota.fila;
+      const saldoCuota     = Math.ceil(parseFloat(row[7]));
+      const montoAplicar   = Math.min(montoRestante, saldoCuota);
+      const nuevoSaldoCuota = saldoCuota - montoAplicar;
+      const nuevoMontoPagado = Math.ceil(parseFloat(row[6])) + montoAplicar;
+      const nuevoEstado    = nuevoSaldoCuota <= 0 ? 'PAGADA' : 'PARCIAL';
+
+      sheetCuotas.getRange(fila, 7).setValue(nuevoMontoPagado);
+      sheetCuotas.getRange(fila, 8).setValue(nuevoSaldoCuota);
+      sheetCuotas.getRange(fila, 9).setValue(nuevoEstado);
+
+      // Codigo unico para este registro de pago
+      const ts          = Date.now().toString(36).toUpperCase();
+      const rnd         = Math.random().toString(36).substring(2, 7).toUpperCase();
+      const codigoVerif = 'PAG-' + ts + '-' + rnd;
+      const idPago      = 'PAGO-' + Date.now() + '-' + idx;
+
+      // Saldo venta actualizado en este momento
+      const cuotasActTemp = sheetCuotas.getDataRange().getValues();
+      let saldoVentaTemp  = 0;
+      for (let i = 1; i < cuotasActTemp.length; i++) {
+        if (cuotasActTemp[i][1] === idVenta) {
+          const est = String(cuotasActTemp[i][8]).toUpperCase();
+          if (est === 'PENDIENTE' || est === 'PARCIAL') saldoVentaTemp += Math.ceil(parseFloat(cuotasActTemp[i][7]) || 0);
+        }
+      }
+
+      // Proxima cuota pendiente
+      let proximaFecha = '';
+      const proxList = cuotasActTemp.slice(1)
+        .filter(c => c[1] === idVenta && (String(c[8]).toUpperCase() === 'PENDIENTE' || String(c[8]).toUpperCase() === 'PARCIAL'))
+        .sort((a, b) => new Date(a[5]) - new Date(b[5]));
+      if (proxList.length > 0) proximaFecha = proxList[0][5];
+
+      // -------------------------------------------------------
+      // Construir ticket JSON para este pago (idéntico al que imprimirá el frontend)
+      // -------------------------------------------------------
+      const ticketId   = 'TKT-' + ts + '-' + rnd;
+      const ticketItems = construirTicketPago_({
+        codigoVerif, numeroCuota: row[2], totalCuotas: row[3],
+        montoPagado: montoAplicar, saldoRestante: saldoVentaTemp,
+        proximaFecha, productoDesc, clienteDoc, nombreCliente,
+        numeroPedido: idVenta, cobrador,
+        fechaPago: fechaPago.toISOString(),
+        // datos del grupo completo (para ticket multi-cuota en col "pagosDelGrupo")
+        esPrimerPago: idx === 0
+      });
+      guardarTicketPermanente_(ss, ticketId, JSON.stringify(ticketItems));
+
+      // Guardar fila en PAGOS (18 columnas)
+      sheetPagos.appendRow([
+        idPago, codigoVerif, fechaPago,
+        data.idCliente, nombreCliente, idVenta, productoDesc,
+        row[0], row[2], row[3],
+        montoAplicar, saldoVentaTemp, proximaFecha,
+        false, '', cobrador, 'ACTIVO', ticketId
+      ]);
+
+      pagosGenerados.push({
+        codigoVerif, idPago, ticketId,
+        numeroCuota: row[2], totalCuotas: row[3],
+        montoPagado: montoAplicar, saldoCuota: nuevoSaldoCuota
+      });
+
+      montoRestante -= montoAplicar;
+    }
+
+    if (pagosGenerados.length === 0) return { success: false, error: 'NO SE PUDO PROCESAR EL PAGO' };
+
+    // Recalcular saldo final de venta
+    const cuotasFinales  = sheetCuotas.getDataRange().getValues();
+    let saldoVentaFinal  = 0;
+    for (let i = 1; i < cuotasFinales.length; i++) {
+      if (cuotasFinales[i][1] === idVenta) {
+        const est = String(cuotasFinales[i][8]).toUpperCase();
+        if (est === 'PENDIENTE' || est === 'PARCIAL') saldoVentaFinal += Math.ceil(parseFloat(cuotasFinales[i][7]) || 0);
       }
     }
 
+    // Actualizar saldo en VENTAS
     const ventasData = sheetVentas.getDataRange().getValues();
     for (let i = 1; i < ventasData.length; i++) {
       if (ventasData[i][0] === idVenta) {
-        sheetVentas.getRange(i + 1, 16).setValue(saldoVenta);
-        if (saldoVenta <= 0) sheetVentas.getRange(i + 1, 15).setValue('COMPLETADA');
+        sheetVentas.getRange(i + 1, 16).setValue(saldoVentaFinal);
+        if (saldoVentaFinal <= 0) sheetVentas.getRange(i + 1, 15).setValue('COMPLETADA');
         break;
       }
     }
 
-    const proximas = cuotasAct.slice(1)
+    // Proxima fecha final
+    let proximaFechaFinal = '';
+    const proxFinal = cuotasFinales.slice(1)
       .filter(c => c[1] === idVenta && (String(c[8]).toUpperCase() === 'PENDIENTE' || String(c[8]).toUpperCase() === 'PARCIAL'))
       .sort((a, b) => new Date(a[5]) - new Date(b[5]));
-    const proximaFecha = proximas.length > 0 ? proximas[0][5] : '';
+    if (proxFinal.length > 0) proximaFechaFinal = proxFinal[0][5];
 
-    let productoDesc = '';
-    for (let i = 1; i < ventasData.length; i++) {
-      if (ventasData[i][0] === idVenta) { productoDesc = String(ventasData[i][19]||''); break; }
-    }
-
-    const fechaPago = data.fechaPago ? new Date(data.fechaPago) : new Date();
-
-    sheetPagos.appendRow([
-      idPago, codigoVerif, fechaPago,
-      data.idCliente, String(data.nombreCliente).toUpperCase(), idVenta, productoDesc,
-      data.idCuota, cuotaActual[2], cuotaActual[3],
-      montoPagado, saldoVenta, proximaFecha,
-      false, '', String(data.cobrador).toUpperCase(), 'ACTIVO', idTransaccion
-    ]);
+    // Construir UN ticket unificado para imprimir todo el grupo de pagos
+    const tsGrupo    = Date.now().toString(36).toUpperCase();
+    const rndGrupo   = Math.random().toString(36).substring(2, 7).toUpperCase();
+    const ticketIdGrupo = 'TKT-G-' + tsGrupo + '-' + rndGrupo;
+    const ticketGrupo   = construirTicketPagoGrupo_({
+      pagosGenerados, saldoRestante: saldoVentaFinal,
+      proximaFecha: proximaFechaFinal, productoDesc,
+      clienteDoc, nombreCliente, numeroPedido: idVenta,
+      cobrador, fechaPago: fechaPago.toISOString(), totalCuotas
+    });
+    guardarTicketPermanente_(ss, ticketIdGrupo, JSON.stringify(ticketGrupo));
 
     return {
-      success: true, codigoVerificacion: codigoVerif, idPago, idTransaccion,
-      saldoRestante: saldoVenta, proximaFecha, productoDesc,
-      numeroCuota: cuotaActual[2], totalCuotas: cuotaActual[3],
-      montoCuota: Math.ceil(cuotaActual[4]), nombreCliente: data.nombreCliente,
+      success: true,
+      pagosGenerados,
+      ticketIdGrupo,        // <-- frontend imprime este (UN ticket con todas las cuotas)
+      saldoRestante: saldoVentaFinal,
+      proximaFecha: proximaFechaFinal,
+      productoDesc,
+      totalCuotas,
+      nombreCliente,
       fechaPago: fechaPago.toISOString()
     };
   } catch (e) { Logger.log('Error registrarPago: ' + e); return { success: false, error: e.toString() }; }
+}
+
+// Guarda ticket SIN vencimiento (para historial/reimpresion)
+function guardarTicketPermanente_(ss, ticketId, jsonString) {
+  try {
+    let sheet = ss.getSheetByName('TICKETS_TEMP');
+    if (!sheet) {
+      sheet = ss.insertSheet('TICKETS_TEMP');
+      sheet.getRange(1,1,1,3).setValues([['ID_Ticket','JSON_Data','Fecha']]);
+    }
+    sheet.appendRow([ticketId, jsonString, new Date()]);
+  } catch(e) { Logger.log('Error guardarTicketPermanente: ' + e); }
+}
+
+// Construye el array de items para UN pago individual (para guardar en cada fila de PAGOS)
+function construirTicketPago_(d) {
+  return construirTicketPagoGrupo_({
+    pagosGenerados: [{ codigoVerif: d.codigoVerif, numeroCuota: d.numeroCuota, totalCuotas: d.totalCuotas, montoPagado: d.montoPagado }],
+    saldoRestante: d.saldoRestante, proximaFecha: d.proximaFecha,
+    productoDesc: d.productoDesc, clienteDoc: d.clienteDoc,
+    nombreCliente: d.nombreCliente, numeroPedido: d.numeroPedido,
+    cobrador: d.cobrador, fechaPago: d.fechaPago, totalCuotas: d.totalCuotas
+  });
+}
+
+// Construye el array de items del ticket (formato Thermer)
+function construirTicketPagoGrupo_(d) {
+  const sep   = '--------------------------------';
+  const items = [];
+  const add   = (content, bold, align) => items.push({type:0, content: String(content), bold:bold||0, align:align||0, format:0});
+  const addC  = (content, bold)        => items.push({type:0, content: String(content), bold:bold||0, align:1, format:0});
+  const addBC = (value)                => items.push({type:2, value:String(value).replace(/[^A-Z0-9]/g,''), width:250, height:70, align:1});
+  const sp    = ()                     => add(' ');
+
+  const fmtGs = (n) => 'GS. ' + Math.ceil(Number(n||0)).toLocaleString('en-US').replace(/,/g,'.');
+  const fmtFechaHora = (iso) => {
+    try {
+      const f = new Date(iso);
+      const d = f.toLocaleDateString('es-PY');
+      const h = f.toTimeString ? f.toTimeString().substring(0,8) : '';
+      return d + ' ' + h;
+    } catch(e) { return String(iso); }
+  };
+  const fmtFecha = (iso) => {
+    try { return new Date(iso).toLocaleDateString('es-PY'); } catch(e) { return String(iso||''); }
+  };
+  const mayus = (s) => String(s||'').toUpperCase();
+
+  addC('TM', 1);
+  sp();
+  addC('RECIBO DE PAGO', 1);
+  addC(sep);
+  sp();
+  add('FECHA: ' + fmtFechaHora(d.fechaPago));
+  if (d.clienteDoc)  add('CLIENTE: ' + mayus(d.clienteDoc));
+  add(mayus(d.nombreCliente));
+  add('PEDIDO: ' + mayus(d.numeroPedido));
+  if (d.productoDesc) add('PRODUCTO: ' + mayus(d.productoDesc));
+  add(sep);
+
+  // Una linea + barcode por cuota
+  (d.pagosGenerados || []).forEach(pago => {
+    const numStr   = String(pago.numeroCuota).padStart(2,'0');
+    const totalStr = String(pago.totalCuotas || d.totalCuotas || '??').padStart(2,'0');
+    add('CUOTA ' + numStr + '/' + totalStr + ' --- ' + fmtGs(pago.montoPagado));
+    addBC(pago.codigoVerif);
+    addC(mayus(pago.codigoVerif));
+    sp();
+  });
+
+  add(sep);
+  add('SALDO RESTANTE: ' + fmtGs(d.saldoRestante));
+  if (d.proximaFecha) add('PROX. VENCIMIENTO: ' + fmtFecha(d.proximaFecha));
+  add(sep);
+  sp();
+  addC('COBRADOR: ' + mayus(d.cobrador));
+  addC('GRACIAS POR SU PAGO!');
+  addC('ESTE TICKET NO NECESITA');
+  addC('SELLO NI FIRMA.');
+  add(sep);
+  sp(); sp();
+  return items;
 }
 
 function getPagosVenta(idVenta) {
@@ -546,13 +719,13 @@ function getPagosVenta(idVenta) {
           ID_Venta: data[i][5], Producto: data[i][6], ID_Cuota: data[i][7],
           Numero_Cuota: data[i][8], Total_Cuotas: data[i][9],
           Monto_Pagado: Math.ceil(data[i][10]), Saldo_Restante: Math.ceil(data[i][11]),
-          Proxima_Fecha: data[i][12], Cobrador: data[i][15],
-          Estado: data[i][16], ID_Transaccion: data[i][17]
+          Proxima_Fecha: data[i][12], Cobrador: data[i][15], Estado: data[i][16],
+          Ticket_ID: data[i][17] || ''
         });
       }
     }
     return pagos;
-  } catch(e) { Logger.log('Error getPagosVenta: ' + e); return []; }
+  } catch(e) { return []; }
 }
 
 function anularVenta(data) {
@@ -573,15 +746,17 @@ function anularVenta(data) {
     for (let i = 1; i < cuotasData.length; i++) {
       if (cuotasData[i][1] === data.idVenta) {
         const est = String(cuotasData[i][8]).toUpperCase();
-        if (est === 'PENDIENTE' || est === 'PARCIAL') sheetCuotas.getRange(i + 1, 9).setValue('ANULADA');
+        if (est === 'PENDIENTE' || est === 'PARCIAL') {
+          sheetCuotas.getRange(i + 1, 9).setValue('ANULADA');
+        }
       }
     }
     const codigoAnul = 'ANUL-' + Date.now().toString(36).toUpperCase();
     if (sheetAnulaciones) {
       sheetAnulaciones.appendRow([
         codigoAnul, new Date(), 'VENTA', data.idVenta,
-        String(data.motivo).toUpperCase(), String(data.usuario||'').toUpperCase(),
-        '', String(data.observacion||'').toUpperCase()
+        String(data.motivo).toUpperCase(), String(data.usuario||'').toUpperCase(), '',
+        String(data.observacion||'').toUpperCase()
       ]);
     }
     return { success: true, codigoAnulacion: codigoAnul };
@@ -636,15 +811,13 @@ function getDetalleVenta(idVenta) {
       if (data[i][1] === idVenta) {
         items.push({
           Descripcion: data[i][2], Cantidad: data[i][3],
-          Precio_Unitario: Math.ceil(data[i][4]),
-          Costo: Math.ceil(data[i][5] || 0),
-          Ganancia_Unit: Math.ceil(data[i][6] || 0),
-          Subtotal: Math.ceil(data[i][4] * data[i][3])
+          Precio_Unitario: Math.ceil(data[i][4]), Subtotal: Math.ceil(data[i][5]),
+          Costo: Math.ceil(data[i][6] || 0), Ganancia: Math.ceil(data[i][7] || 0)
         });
       }
     }
     return items;
-  } catch(e) { Logger.log('Error getDetalleVenta: ' + e); return []; }
+  } catch(e) { return []; }
 }
 
 function getCuotasVenta(idVenta) {
@@ -663,11 +836,11 @@ function getCuotasVenta(idVenta) {
       }
     }
     return cuotas;
-  } catch(e) { Logger.log('Error getCuotasVenta: ' + e); return []; }
+  } catch(e) { return []; }
 }
 
 // ============================================
-// ESTADÍSTICAS
+// ESTADÍSTICAS mejoradas
 // ============================================
 function getEstadisticas() {
   try {
@@ -678,33 +851,48 @@ function getEstadisticas() {
     const pagosData = ss.getSheetByName('PAGOS').getDataRange().getValues();
     const cuotasData = ss.getSheetByName('CUOTAS').getDataRange().getValues();
     let ventasHoy=0, ventasMes=0, cobrosHoy=0, cobrosMes=0, cuotasVencidas=0;
-    let totalVentasMes=0, creditosActivos=0, totalCreditosActivos=0;
-
+    let totalVentasMes = 0;
+    let creditosActivos = 0;
+    let totalCreditosActivos = 0;
+    
     for (let i = 1; i < ventasData.length; i++) {
-      if (String(ventasData[i][14]).toUpperCase() === 'ANULADA') continue;
+      if (ventasData[i][14] === 'ANULADA') continue;
       const fecha = new Date(ventasData[i][2]);
       if (fecha.toDateString() === hoy.toDateString()) ventasHoy++;
-      if (fecha >= inicioMes) { ventasMes++; totalVentasMes += Math.ceil(parseFloat(ventasData[i][5]) || 0); }
+      if (fecha >= inicioMes) {
+        ventasMes++;
+        totalVentasMes += Math.ceil(parseFloat(ventasData[i][5]) || 0);
+      }
+      // Créditos activos
       const saldo = Math.ceil(parseFloat(ventasData[i][15]) || 0);
-      if (saldo > 0) { creditosActivos++; totalCreditosActivos += saldo; }
+      if (saldo > 0) {
+        creditosActivos++;
+        totalCreditosActivos += saldo;
+      }
     }
-
+    
     for (let i = 1; i < pagosData.length; i++) {
       if (String(pagosData[i][16]).toUpperCase() === 'ANULADO') continue;
       const fecha = new Date(pagosData[i][2]);
       if (fecha.toDateString() === hoy.toDateString()) cobrosHoy++;
       if (fecha >= inicioMes) cobrosMes++;
     }
-
+    
     for (let i = 1; i < cuotasData.length; i++) {
       const est = String(cuotasData[i][8]).toUpperCase();
       if ((est === 'PENDIENTE' || est === 'PARCIAL') && cuotasData[i][0]) {
         if (new Date(cuotasData[i][5]) < hoy) cuotasVencidas++;
       }
     }
-
-    return { ventasHoy, ventasMes, cobrosHoy, cobrosMes, cuotasVencidas, totalVentasMes, creditosActivos, totalCreditosActivos };
+    
+    return {
+      ventasHoy, ventasMes, cobrosHoy, cobrosMes, cuotasVencidas,
+      totalVentasMes, creditosActivos, totalCreditosActivos
+    };
   } catch(e) {
-    return { ventasHoy:0, ventasMes:0, cobrosHoy:0, cobrosMes:0, cuotasVencidas:0, totalVentasMes:0, creditosActivos:0, totalCreditosActivos:0 };
+    return {
+      ventasHoy:0, ventasMes:0, cobrosHoy:0, cobrosMes:0, cuotasVencidas:0,
+      totalVentasMes:0, creditosActivos:0, totalCreditosActivos:0
+    };
   }
 }
