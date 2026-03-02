@@ -1,4 +1,4 @@
 // ============================================
 // CONFIGURACIÓN - API URL
 // ============================================
-const API_URL = 'https://script.google.com/macros/s/AKfycbzS6EH865uwQ9doAPWgzM8h0O6qU0xRxINZwO_i-RPmJA2SKzCZQjGicsN8N9bvzfbAsg/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbwr5eE6AVzEI5AcdvP98aOOB01aUAGdAPCpk2z7LY6VVYi5RwfYlooXjfeOtQqeOqjS3Q/exec';
