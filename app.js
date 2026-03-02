@@ -1,6 +1,5 @@
 // ============================================
-// TECH MARKET - App v4.1
-// Fix: fecha venta/pago precargada con hoy, hora automatica al guardar
+// TECH MARKET - App v4.0
 // Nuevas: Thermer JSON fix, cuotas vencidas por cliente,
 // todo mayusculas, anulacion venta/pago, reimpresion pagos
 // ============================================
@@ -674,7 +673,7 @@ async function showVentas() {
   document.getElementById('ventasPage').classList.remove('hidden');
   if (!APP.clientes.length) APP.clientes = await getClientesAPI();
   const fechaEl = document.getElementById('ventaFecha');
-  if (fechaEl) fechaEl.value = new Date().toISOString().substring(0, 10);
+  if (fechaEl) fechaEl.value = '';
   renderBuscadorClientes('ventaClienteBusca','ventaClienteId','ventaClienteNombreHidden');
   if (APP.ventaClientePreseleccionado) {
     const vc = APP.ventaClientePreseleccionado;
@@ -779,13 +778,7 @@ document.getElementById('formVenta').addEventListener('submit', async function(e
     cantidadCuotas: parseInt(document.getElementById('ventaCuotas').value)||0,
     diasPrimeraCuota: parseInt(document.getElementById('ventaDias').value)||30,
     garantiaMeses: parseInt(document.getElementById('ventaGarantia').value)||0,
-    fechaVenta: (()=>{
-      const d = document.getElementById('ventaFecha');
-      const fechaStr = d ? d.value : '';
-      if (!fechaStr) return new Date().toISOString();
-      const ahora = new Date();
-      return fechaStr + 'T' + ahora.toTimeString().substring(0,8);
-    })(),
+    fechaVenta: document.getElementById('fechaVenta').value || new Date().toISOString(),
     vendedor: APP.user.nombre
   };
   const result = await saveVentaAPI(datos);
@@ -1017,8 +1010,8 @@ function mostrarModalPago(idCuota, saldo, idVenta, numeroCuota, totalCuotas) {
       <input type="text" id="montoPagoInput" oninput="formatearMiles(this)" value="${saldo}" step="1000" style="width:100%;padding:14px;border:2px solid var(--border);border-radius:12px;font-size:16px;box-sizing:border-box;">
     </div>
     <div style="margin-bottom:16px;">
-      <label style="font-size:13px;color:var(--muted);display:block;margin-bottom:4px;">📅 FECHA DEL PAGO</label>
-      <input type="date" id="fechaPagoInput" style="width:100%;padding:14px;border:2px solid var(--border);border-radius:12px;font-size:15px;box-sizing:border-box;">
+      <label style="font-size:13px;color:var(--muted);display:block;margin-bottom:4px;">FECHA DEL PAGO</label>
+      <input type="date" id="fechaPagoInput" placeholder="FECHA (OPCIONAL)" style="width:100%;padding:14px;border:2px solid var(--border);border-radius:12px;font-size:15px;box-sizing:border-box;">
     </div>
     <div style="display:flex;gap:10px;">
       <button onclick="document.getElementById('modalPago').remove()" class="btn btn-secondary" style="flex:1;">CANCELAR</button>
@@ -1026,71 +1019,64 @@ function mostrarModalPago(idCuota, saldo, idVenta, numeroCuota, totalCuotas) {
     </div>
   </div>`;
   document.body.appendChild(modal);
-  document.getElementById('fechaPagoInput').value = new Date().toISOString().substring(0, 10);
 }
 
 async function confirmarPago(idCuota, idVenta, saldo) {
   const input = document.getElementById('montoPagoInput');
   const fechaInput = document.getElementById('fechaPagoInput');
   const montoPago = obtenerValorNumerico(input);
-  // Fecha/hora: si no hay input o está vacío, usar actual completa
+
+  // Fecha+hora: si no tocaron el campo, hora exacta ahora
   let fechaPago;
   if (!fechaInput || !fechaInput.value) {
     fechaPago = new Date().toISOString();
   } else {
-    // Si tiene valor, combinar con hora actual
     const ahora = new Date();
-    const horaActual = ahora.toTimeString().substring(0,8);
-    fechaPago = fechaInput.value + 'T' + horaActual;
+    fechaPago = fechaInput.value + 'T' + ahora.toTimeString().substring(0,8);
   }
-  if (!montoPago||montoPago<=0) { toast('INGRESÁ UN MONTO VÁLIDO','warning'); return; }
-  
+  if (!montoPago || montoPago <= 0) { toast('INGRESÁ UN MONTO VÁLIDO','warning'); return; }
+
   const modal = document.getElementById('modalPago'); if(modal) modal.remove();
   showLoader('REGISTRANDO PAGO...');
   const selectId = document.getElementById('cobranzaClienteId');
   const selectNombre = document.getElementById('cobranzaClienteNombreHidden');
   const datos = {
     idCuota, montoPago, idVenta,
-    idCliente: selectId?selectId.value:'',
-    nombreCliente: selectNombre?selectNombre.value:'',
+    idCliente: selectId ? selectId.value : '',
+    nombreCliente: selectNombre ? selectNombre.value : '',
     cobrador: APP.user.nombre, fechaPago
   };
   const result = await registrarPagoAPI(datos);
   hideLoader();
-  
+
   if (result.success) {
-    const cantidadPagos = result.pagosGenerados ? result.pagosGenerados.length : 1;
-    let mensaje = cantidadPagos > 1 ? cantidadPagos + ' CUOTAS PROCESADAS' : 'PAGO REGISTRADO';
+    // pagosGenerados es el array con cada cuota procesada y su codigo
+    const pagos = result.pagosGenerados || [];
+    const cantidadPagos = pagos.length;
+    const mensaje = cantidadPagos > 1 ? cantidadPagos + ' CUOTAS PROCESADAS' : 'PAGO REGISTRADO';
     mostrarConfirmacion(mensaje);
-    
-    setTimeout(async()=>{
-      // Imprimir UN ticket por cada pago generado
+
+    setTimeout(async () => {
       const cliente = APP.clientes.find(c => c.ID_Cliente === datos.idCliente);
-      
-      if (result.pagosGenerados && result.pagosGenerados.length > 0) {
-        for (const pago of result.pagosGenerados) {
-          await imprimirTicketBluetooth({
-            tipo:'pago',
-            nombreCliente: datos.nombreCliente,
-            clienteDoc: cliente ? cliente.CI_RUC : '',
-            numeroPedido: idVenta,
-            codigoVerif: pago.codigoVerif,
-            montoPago: pago.montoPagado,
-            saldoRestante: result.saldoRestante,
-            proximaFecha: result.proximaFecha,
-            productoDesc: result.productoDesc||'',
-            numeroCuota: pago.numeroCuota,
-            totalCuotas: pago.totalCuotas,
-            cobrador: APP.user.nombre,
-            fechaPago: fechaPago
-          });
-          // Pequeña pausa entre impresiones
-          await new Promise(resolve => setTimeout(resolve, 500));
-        }
+
+      if (pagos.length > 0) {
+        // UN SOLO TICKET con todas las cuotas procesadas
+        await imprimirTicketPagoMultiple({
+          pagos,
+          nombreCliente: datos.nombreCliente,
+          clienteDoc: cliente ? cliente.CI_RUC : '',
+          numeroPedido: idVenta,
+          saldoRestante: result.saldoRestante,
+          proximaFecha: result.proximaFecha,
+          productoDesc: result.productoDesc || '',
+          totalCuotas: result.totalCuotas,
+          cobrador: APP.user.nombre,
+          fechaPago: fechaPago
+        });
       }
-      setTimeout(()=>cargarCuotasCliente(),2000);
-    },1900);
-  } else toast(result.error||'ERROR AL REGISTRAR PAGO','error',4000);
+      setTimeout(() => cargarCuotasCliente(), 2000);
+    }, 1900);
+  } else toast(result.error || 'ERROR AL REGISTRAR PAGO', 'error', 4000);
 }
 
 
@@ -1519,7 +1505,7 @@ async function showVentas() {
   document.getElementById('ventasPage').classList.remove('hidden');
   if (!APP.clientes.length) APP.clientes = await getClientesAPI();
   const fechaEl = document.getElementById('ventaFecha');
-  if (fechaEl) fechaEl.value = new Date().toISOString().substring(0, 10);
+  if (fechaEl) fechaEl.value = '';
   renderBuscadorClientes('ventaClienteBusca','ventaClienteId','ventaClienteNombreHidden');
   if (APP.ventaClientePreseleccionado) {
     const vc = APP.ventaClientePreseleccionado;
@@ -1742,8 +1728,8 @@ function mostrarModalPago(idCuota, saldo, idVenta, numeroCuota, totalCuotas) {
       <input type="text" id="montoPagoInput" oninput="formatearMiles(this)" value="${saldo}" step="1000" style="width:100%;padding:14px;border:2px solid var(--border);border-radius:12px;font-size:16px;box-sizing:border-box;">
     </div>
     <div style="margin-bottom:16px;">
-      <label style="font-size:13px;color:var(--muted);display:block;margin-bottom:4px;">📅 FECHA DEL PAGO</label>
-      <input type="date" id="fechaPagoInput" style="width:100%;padding:14px;border:2px solid var(--border);border-radius:12px;font-size:15px;box-sizing:border-box;">
+      <label style="font-size:13px;color:var(--muted);display:block;margin-bottom:4px;">FECHA DEL PAGO</label>
+      <input type="date" id="fechaPagoInput" placeholder="FECHA (OPCIONAL)" style="width:100%;padding:14px;border:2px solid var(--border);border-radius:12px;font-size:15px;box-sizing:border-box;">
     </div>
     <div style="display:flex;gap:10px;">
       <button onclick="document.getElementById('modalPago').remove()" class="btn btn-secondary" style="flex:1;">CANCELAR</button>
@@ -1751,7 +1737,6 @@ function mostrarModalPago(idCuota, saldo, idVenta, numeroCuota, totalCuotas) {
     </div>
   </div>`;
   document.body.appendChild(modal);
-  document.getElementById('fechaPagoInput').value = new Date().toISOString().substring(0, 10);
 }
 
 
@@ -1790,4 +1775,73 @@ async function imprimirEstadoCuenta(idVenta) {
 }
 
 
+
+// ============================================
+// TICKET DE PAGO MÚLTIPLE (una o varias cuotas en un ticket)
+// ============================================
+async function imprimirTicketPagoMultiple(datos) {
+  const sep = '--------------------------------';
+  const items = [];
+  const add = (content, bold=0, align=0, format=0) => items.push({type:0,content,bold,align,format});
+  const addCenter = (content, bold=0, format=0) => add(content, bold, 1, format);
+  const addBarcode = (value) => items.push({type:2, value:String(value).replace(/[^A-Z0-9]/g,''), width:250, height:70, align:1});
+  const sp = () => add(' ');
+
+  const fmtFechaHora = (fecha) => {
+    const f = fecha instanceof Date ? fecha : new Date(fecha);
+    return f.toLocaleDateString('es-PY') + ' ' + f.toTimeString().substring(0,8);
+  };
+
+  addCenter('TM', 1, 3);
+  sp();
+  addCenter('RECIBO DE PAGO', 1, 1);
+  addCenter(sep);
+  sp();
+  add('FECHA: ' + fmtFechaHora(datos.fechaPago || new Date()));
+  if (datos.clienteDoc) add('CLIENTE: ' + mayus(datos.clienteDoc));
+  add(mayus(datos.nombreCliente));
+  add('PEDIDO: ' + mayus(datos.numeroPedido));
+  if (datos.productoDesc) add('PRODUCTO: ' + mayus(datos.productoDesc));
+  add(sep);
+
+  // Una línea + código de barras por cada cuota procesada
+  for (const pago of datos.pagos) {
+    const numStr = String(pago.numeroCuota).padStart(2,'0');
+    const totalStr = String(datos.totalCuotas || pago.totalCuotas || '??').padStart(2,'0');
+    add('CUOTA ' + numStr + '/' + totalStr + ' --- ' + fmtGs(pago.montoPagado));
+    addBarcode(pago.codigoVerif);
+    addCenter(mayus(pago.codigoVerif));
+    sp();
+  }
+
+  add(sep);
+  add('SALDO RESTANTE: ' + fmtGs(datos.saldoRestante));
+  if (datos.proximaFecha) add('PROX. VENCIMIENTO: ' + fmtFecha(datos.proximaFecha));
+  add(sep);
+  sp();
+  addCenter('COBRADOR: ' + mayus(datos.cobrador));
+  addCenter('GRACIAS POR SU PAGO!');
+  addCenter('ESTE TICKET NO NECESITA');
+  addCenter('SELLO NI FIRMA.');
+  add(sep);
+  sp(); sp();
+
+  const ticketJson = JSON.stringify(items);
+  const ticketId = 'TKT-' + Date.now().toString(36).toUpperCase();
+  try {
+    await guardarTicketAPI(ticketId, ticketJson);
+    const ticketURL = API_URL + '?action=getTicket&ticketId=' + encodeURIComponent(ticketId);
+    const printURL = 'my.bluetoothprint.scheme://' + ticketURL;
+    const a = document.createElement('a');
+    a.href = printURL;
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => a.remove(), 500);
+    toast('ENVIANDO A IMPRESORA...', 'info', 2000);
+  } catch(e) {
+    toast('ERROR AL ENVIAR A IMPRESORA', 'error');
+    console.error('Bluetooth print error:', e);
+  }
+}
 console.log('🚀 TECH MARKET v4.0');
