@@ -1,5 +1,6 @@
 // ============================================
-// TECH MARKET - App v4.0
+// TECH MARKET - App v4.1
+// Fix: fecha venta/pago precargada con hoy, hora automatica al guardar
 // Nuevas: Thermer JSON fix, cuotas vencidas por cliente,
 // todo mayusculas, anulacion venta/pago, reimpresion pagos
 // ============================================
@@ -673,7 +674,7 @@ async function showVentas() {
   document.getElementById('ventasPage').classList.remove('hidden');
   if (!APP.clientes.length) APP.clientes = await getClientesAPI();
   const fechaEl = document.getElementById('ventaFecha');
-  if (fechaEl) fechaEl.value = '';
+  if (fechaEl) fechaEl.value = new Date().toISOString().substring(0, 10);
   renderBuscadorClientes('ventaClienteBusca','ventaClienteId','ventaClienteNombreHidden');
   if (APP.ventaClientePreseleccionado) {
     const vc = APP.ventaClientePreseleccionado;
@@ -778,7 +779,13 @@ document.getElementById('formVenta').addEventListener('submit', async function(e
     cantidadCuotas: parseInt(document.getElementById('ventaCuotas').value)||0,
     diasPrimeraCuota: parseInt(document.getElementById('ventaDias').value)||30,
     garantiaMeses: parseInt(document.getElementById('ventaGarantia').value)||0,
-    fechaVenta: document.getElementById('fechaVenta').value || new Date().toISOString(),
+    fechaVenta: (()=>{
+      const d = document.getElementById('ventaFecha');
+      const fechaStr = d ? d.value : '';
+      if (!fechaStr) return new Date().toISOString();
+      const ahora = new Date();
+      return fechaStr + 'T' + ahora.toTimeString().substring(0,8);
+    })(),
     vendedor: APP.user.nombre
   };
   const result = await saveVentaAPI(datos);
@@ -1010,8 +1017,8 @@ function mostrarModalPago(idCuota, saldo, idVenta, numeroCuota, totalCuotas) {
       <input type="text" id="montoPagoInput" oninput="formatearMiles(this)" value="${saldo}" step="1000" style="width:100%;padding:14px;border:2px solid var(--border);border-radius:12px;font-size:16px;box-sizing:border-box;">
     </div>
     <div style="margin-bottom:16px;">
-      <label style="font-size:13px;color:var(--muted);display:block;margin-bottom:4px;">FECHA DEL PAGO</label>
-      <input type="date" id="fechaPagoInput" placeholder="FECHA (OPCIONAL)" style="width:100%;padding:14px;border:2px solid var(--border);border-radius:12px;font-size:15px;box-sizing:border-box;">
+      <label style="font-size:13px;color:var(--muted);display:block;margin-bottom:4px;">📅 FECHA DEL PAGO</label>
+      <input type="date" id="fechaPagoInput" style="width:100%;padding:14px;border:2px solid var(--border);border-radius:12px;font-size:15px;box-sizing:border-box;">
     </div>
     <div style="display:flex;gap:10px;">
       <button onclick="document.getElementById('modalPago').remove()" class="btn btn-secondary" style="flex:1;">CANCELAR</button>
@@ -1019,6 +1026,7 @@ function mostrarModalPago(idCuota, saldo, idVenta, numeroCuota, totalCuotas) {
     </div>
   </div>`;
   document.body.appendChild(modal);
+  document.getElementById('fechaPagoInput').value = new Date().toISOString().substring(0, 10);
 }
 
 async function confirmarPago(idCuota, idVenta, saldo) {
@@ -1511,7 +1519,7 @@ async function showVentas() {
   document.getElementById('ventasPage').classList.remove('hidden');
   if (!APP.clientes.length) APP.clientes = await getClientesAPI();
   const fechaEl = document.getElementById('ventaFecha');
-  if (fechaEl) fechaEl.value = '';
+  if (fechaEl) fechaEl.value = new Date().toISOString().substring(0, 10);
   renderBuscadorClientes('ventaClienteBusca','ventaClienteId','ventaClienteNombreHidden');
   if (APP.ventaClientePreseleccionado) {
     const vc = APP.ventaClientePreseleccionado;
@@ -1734,8 +1742,8 @@ function mostrarModalPago(idCuota, saldo, idVenta, numeroCuota, totalCuotas) {
       <input type="text" id="montoPagoInput" oninput="formatearMiles(this)" value="${saldo}" step="1000" style="width:100%;padding:14px;border:2px solid var(--border);border-radius:12px;font-size:16px;box-sizing:border-box;">
     </div>
     <div style="margin-bottom:16px;">
-      <label style="font-size:13px;color:var(--muted);display:block;margin-bottom:4px;">FECHA DEL PAGO</label>
-      <input type="date" id="fechaPagoInput" placeholder="FECHA (OPCIONAL)" style="width:100%;padding:14px;border:2px solid var(--border);border-radius:12px;font-size:15px;box-sizing:border-box;">
+      <label style="font-size:13px;color:var(--muted);display:block;margin-bottom:4px;">📅 FECHA DEL PAGO</label>
+      <input type="date" id="fechaPagoInput" style="width:100%;padding:14px;border:2px solid var(--border);border-radius:12px;font-size:15px;box-sizing:border-box;">
     </div>
     <div style="display:flex;gap:10px;">
       <button onclick="document.getElementById('modalPago').remove()" class="btn btn-secondary" style="flex:1;">CANCELAR</button>
@@ -1743,6 +1751,7 @@ function mostrarModalPago(idCuota, saldo, idVenta, numeroCuota, totalCuotas) {
     </div>
   </div>`;
   document.body.appendChild(modal);
+  document.getElementById('fechaPagoInput').value = new Date().toISOString().substring(0, 10);
 }
 
 
