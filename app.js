@@ -1,4 +1,11 @@
-// ============================================
+
+function fmtFechaHora(val) {
+  if (!val) return '';
+  const d = new Date(val);
+  if (isNaN(d)) return String(val);
+  return d.toLocaleDateString('es-PY',{day:'2-digit',month:'2-digit',year:'numeric'})
+       + ' ' + d.toLocaleTimeString('es-PY',{hour:'2-digit',minute:'2-digit'});
+}// ============================================
 // TECH MARKET - App v4.0
 // Nuevas: Thermer JSON fix, cuotas vencidas por cliente,
 // todo mayusculas, anulacion venta/pago, reimpresion pagos
@@ -77,7 +84,7 @@ function mostrarConfirmacion(msg) {
 // HELPERS
 // ============================================
 function hideAll() {
-  ['loginPage','dashboardPage','clientesPage','formClientePage','detalleClientePage','ventasPage','listadoVentasPage','cobranzasPage'].forEach(id=>{
+  ['loginPage','dashboardPage','clientesPage','formClientePage','detalleClientePage','ventasPage','listadoVentasPage','cobranzasPage','verificadorPage'].forEach(id=>{
     const el=document.getElementById(id); if(el) el.classList.add('hidden');
   });
 }
@@ -392,21 +399,28 @@ async function verDetalleVenta(idVenta) {
 
   // Historial: UNA entrada por transaccion (el backend ya agrupa por Ticket_ID_Grupo)
   const pagosHtml = pagos.length ? pagos.map(trx => {
-    const cantCuotas = trx.Cuotas ? trx.Cuotas.length : 1;
-    // Descripcion: "CUOTA 02/12" o "CUOTAS 02, 03, 04 /12"
-    const cuotasDesc = cantCuotas > 1
-      ? 'CUOTAS ' + trx.Cuotas.map(c => String(c.Numero_Cuota).padStart(2,'0')).join(', ') + '/' + String(trx.Total_Cuotas).padStart(2,'0')
-      : 'CUOTA ' + String(trx.Cuotas[0].Numero_Cuota).padStart(2,'0') + '/' + String(trx.Total_Cuotas).padStart(2,'0');
-    // Mostrar todos los codigos de barras en gris chico
-    const codigosDesc = trx.Cuotas.map(c => c.Codigo_Verificacion).join(' · ');
-    const primerCodigo = trx.Cuotas[0].Codigo_Verificacion;
-    const tIdGrupo = trx.Ticket_ID_Grupo || '';
+    // Null checks seguros - si Cuotas no existe o está vacío el modal no crashea
+    const cuotas     = (trx.Cuotas && trx.Cuotas.length > 0) ? trx.Cuotas : [];
+    const nCuotas    = cuotas.length;
+    const totalStr   = String(trx.Total_Cuotas || '?').padStart(2, '0');
+    let cuotasDesc;
+    if (nCuotas === 0) {
+      cuotasDesc = 'PAGO';
+    } else if (nCuotas === 1) {
+      cuotasDesc = 'CUOTA ' + String(cuotas[0].Numero_Cuota).padStart(2,'0') + '/' + totalStr;
+    } else {
+      cuotasDesc = 'CUOTAS ' + cuotas.map(c => String(c.Numero_Cuota).padStart(2,'0')).join(', ') + '/' + totalStr;
+    }
+    const codigosDesc  = cuotas.map(c => c.Codigo_Verificacion).join(' · ');
+    const primerCodigo = nCuotas > 0 ? cuotas[0].Codigo_Verificacion : '';
+    const tIdGrupo     = trx.Ticket_ID_Grupo || '';
+    const montoTotal   = trx.Monto_Total || 0;
     return `
     <div style="padding:10px 0;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
       <div style="flex:1;min-width:0;">
         <div style="font-size:13px;font-weight:700;">${cuotasDesc} &nbsp;·&nbsp; ${fmtFecha(trx.Fecha_Pago)}</div>
         <div style="font-size:11px;color:var(--muted);word-break:break-all;">${codigosDesc}</div>
-        <div style="font-size:13px;color:var(--success);font-weight:600;">COBRADO: ${fmtGs(trx.Monto_Total)}</div>
+        <div style="font-size:13px;color:var(--success);font-weight:600;">COBRADO: ${fmtGs(montoTotal)}</div>
       </div>
       <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end;margin-left:8px;">
         <button onclick="reimprimirPagoGrupo('${tIdGrupo}')" style="background:var(--bg);border:1px solid var(--border);padding:6px 10px;border-radius:8px;cursor:pointer;font-size:14px;">🖨️</button>
@@ -1183,3 +1197,168 @@ async function imprimirEstadoCuenta(idVenta) {
 
 
 console.log('🚀 TECH MARKET v4.0');
+
+
+// ============================================
+// VERIFICADOR DE CODIGOS DE BARRAS
+// ============================================
+
+async function showVerificador() {
+  hideAll();
+  document.getElementById('verificadorPage').classList.remove('hidden');
+  document.getElementById('resultadoVerificacion').innerHTML = '';
+  document.getElementById('codigoVerifInput').value = '';
+  iniciarEscanerQR();
+}
+
+function salirVerificador() {
+  detenerEscaner();
+  showDashboard();
+}
+
+function iniciarEscanerQR() {
+  const video  = document.getElementById('qrVideo');
+  const canvas = document.getElementById('qrCanvas');
+  const status = document.getElementById('qrStatus');
+  if (!video || !canvas) return;
+
+  // Detener stream anterior
+  if (APP.qrStream) { APP.qrStream.getTracks().forEach(t => t.stop()); APP.qrStream = null; }
+  APP.qrScanning = false;
+
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    if (status) status.textContent = 'Cámara no disponible - ingresá el código manualmente';
+    video.style.display = 'none';
+    return;
+  }
+
+  navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+    .then(stream => {
+      APP.qrStream = stream;
+      video.srcObject = stream;
+      video.play();
+      APP.qrScanning = true;
+      if (status) status.textContent = 'Apuntá la cámara al código de barras';
+      escanearFrames(video, canvas, status);
+    })
+    .catch(() => {
+      if (status) status.textContent = 'Cámara no disponible - ingresá el código manualmente';
+      video.style.display = 'none';
+    });
+}
+
+function escanearFrames(video, canvas, status) {
+  if (!APP.qrScanning) return;
+  if (video.readyState === video.HAVE_ENOUGH_DATA) {
+    canvas.width  = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    try {
+      const img  = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const code = typeof jsQR === 'function'
+        ? jsQR(img.data, img.width, img.height, { inversionAttempts: 'dontInvert' })
+        : null;
+      if (code && code.data && code.data.trim()) {
+        APP.qrScanning = false;
+        if (APP.qrStream) { APP.qrStream.getTracks().forEach(t => t.stop()); APP.qrStream = null; }
+        const codigoDetectado = code.data.trim().toUpperCase();
+        document.getElementById('codigoVerifInput').value = codigoDetectado;
+        if (status) status.textContent = '✅ Código detectado: ' + codigoDetectado;
+        ejecutarVerificacion(codigoDetectado);
+        return;
+      }
+    } catch(e) {}
+  }
+  requestAnimationFrame(() => escanearFrames(video, canvas, status));
+}
+
+function detenerEscaner() {
+  APP.qrScanning = false;
+  if (APP.qrStream) { APP.qrStream.getTracks().forEach(t => t.stop()); APP.qrStream = null; }
+}
+
+async function ejecutarVerificacion(codigoParam) {
+  const input  = document.getElementById('codigoVerifInput');
+  const codigo = (codigoParam || (input ? input.value : '')).trim().toUpperCase();
+  if (!codigo) { toast('INGRESÁ UN CÓDIGO', 'warning'); return; }
+
+  const res = document.getElementById('resultadoVerificacion');
+  res.innerHTML = '<div style="text-align:center;padding:24px;color:var(--muted);font-size:15px;">⏳ VERIFICANDO...</div>';
+
+  const r = await verificarCodigoAPI(codigo);
+
+  if (!r.success) {
+    res.innerHTML = `<div style="background:#fee2e2;border-radius:14px;padding:20px;text-align:center;">
+      <div style="font-size:40px;">❌</div>
+      <div style="font-weight:800;color:#ef4444;font-size:16px;margin-top:8px;">ERROR DE CONSULTA</div>
+      <div style="font-size:13px;color:var(--muted);margin-top:6px;">${r.error||'Sin conexión'}</div>
+    </div>`;
+    return;
+  }
+
+  if (!r.valido) {
+    res.innerHTML = `<div style="background:#fee2e2;border-radius:14px;padding:20px;text-align:center;">
+      <div style="font-size:40px;">🚫</div>
+      <div style="font-weight:800;color:#ef4444;font-size:18px;margin-top:8px;">CÓDIGO NO ENCONTRADO</div>
+      <div style="font-size:13px;color:var(--muted);margin-top:6px;">${codigo}</div>
+      <button onclick="limpiarVerificacion()" class="btn btn-secondary" style="margin-top:14px;width:100%;">ESCANEAR OTRO</button>
+    </div>`;
+    return;
+  }
+
+  if (r.anulado) {
+    res.innerHTML = `<div style="background:#fef3c7;border-radius:14px;padding:20px;">
+      <div style="text-align:center;margin-bottom:14px;">
+        <div style="font-size:40px;">⚠️</div>
+        <div style="font-weight:800;color:#92400e;font-size:16px;margin-top:6px;">CÓDIGO ANULADO</div>
+        <div style="font-size:12px;color:#92400e;margin-top:4px;">Este pago fue anulado y no es válido</div>
+      </div>
+      <div style="font-family:monospace;background:rgba(0,0,0,0.07);padding:10px;border-radius:8px;text-align:center;font-size:13px;">${r.codigo}</div>
+      <button onclick="limpiarVerificacion()" class="btn btn-secondary" style="margin-top:14px;width:100%;">ESCANEAR OTRO</button>
+    </div>`;
+    return;
+  }
+
+  // Pago válido y activo
+  res.innerHTML = `
+  <div style="background:#d1fae5;border-radius:14px;padding:16px;margin-bottom:12px;">
+    <div style="text-align:center;margin-bottom:12px;">
+      <div style="font-size:44px;">✅</div>
+      <div style="font-weight:800;color:#065f46;font-size:20px;margin-top:4px;">PAGO VÁLIDO</div>
+    </div>
+  </div>
+  <div style="background:white;border-radius:14px;padding:16px;box-shadow:var(--shadow);">
+    <div style="display:grid;gap:0;">
+      ${fila('CÓDIGO',    r.codigo,             'monospace')}
+      ${fila('CLIENTE',   r.cliente)}
+      ${fila('FECHA',     fmtFechaHora(r.fechaPago))}
+      ${fila('PRODUCTO',  r.producto)}
+      ${fila('CUOTA',     r.numeroCuota+'/'+r.totalCuotas)}
+      ${filaDestacada('MONTO COBRADO', fmtGs(r.montoPagado), 'var(--success)')}
+      ${filaDestacada('SALDO RESTANTE', fmtGs(r.saldoRestante), r.saldoRestante>0?'var(--danger)':'var(--success)')}
+      ${fila('COBRADOR',  r.cobrador)}
+    </div>
+  </div>
+  <button onclick="limpiarVerificacion()" class="btn btn-secondary" style="width:100%;margin-top:14px;">🔍 ESCANEAR OTRO</button>`;
+}
+
+function fila(label, valor, fontStyle) {
+  const fs = fontStyle ? `font-family:${fontStyle};` : '';
+  return `<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border);">
+    <span style="color:var(--muted);font-size:13px;flex-shrink:0;">${label}</span>
+    <strong style="text-align:right;font-size:13px;max-width:62%;word-break:break-all;${fs}">${String(valor||'').toUpperCase()}</strong>
+  </div>`;
+}
+function filaDestacada(label, valor, color) {
+  return `<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border);">
+    <span style="color:var(--muted);font-size:13px;">${label}</span>
+    <strong style="font-size:17px;color:${color};">${valor}</strong>
+  </div>`;
+}
+
+function limpiarVerificacion() {
+  document.getElementById('resultadoVerificacion').innerHTML = '';
+  document.getElementById('codigoVerifInput').value = '';
+  iniciarEscanerQR();
+}
