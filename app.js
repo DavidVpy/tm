@@ -131,7 +131,7 @@ async function imprimirTicketBluetooth(datos) {
   const items = [];
   const add = (content, bold=0, align=0, format=0) => items.push({type:0,content,bold,align,format});
   const addCenter = (content, bold=0, format=0) => add(content, bold, 1, format);
-  const addBarcode = (value) => items.push({type:2, value:String(value).replace(/[^A-Z0-9\-]/g,''), width:250, height:70, align:1});
+  const addBarcode = (value) => items.push({type:2, value:String(value).replace(/[^A-Z0-9]/g,''), width:250, height:70, align:1});
   const sp = () => add(' ');
   
   // Función helper para fecha con hora y segundos
@@ -210,13 +210,28 @@ async function imprimirTicketBluetooth(datos) {
     add('CUOTAS PAGADAS:');
     sp();
     if (datos.pagos && datos.pagos.length > 0) {
-      datos.pagos.forEach(pago => {
-        add(fmtFechaHora(pago.Fecha_Pago));
-        const numStr = String(pago.Numero_Cuota).padStart(2, '0');
-        const totalStr = String(pago.Total_Cuotas).padStart(2, '0');
-        add('CUOTA ' + numStr + '/' + totalStr + ' --- ' + fmtGs(pago.Monto_Pagado));
-        addBarcode(pago.Codigo_Verificacion);
-        addCenter(mayus(pago.Codigo_Verificacion), 0, 0);
+      datos.pagos.forEach(trx => {
+        // Nuevo formato agrupado: cada trx tiene Cuotas[] y Monto_Total
+        const cuotas   = (trx.Cuotas && trx.Cuotas.length > 0) ? trx.Cuotas : [];
+        const nCuotas  = cuotas.length;
+        const totalStr = String(trx.Total_Cuotas || '?').padStart(2,'0');
+        let cuotasDesc;
+        if (nCuotas === 0)      cuotasDesc = 'PAGO';
+        else if (nCuotas === 1) cuotasDesc = 'CUOTA ' + String(cuotas[0].Numero_Cuota).padStart(2,'0') + '/' + totalStr;
+        else                    cuotasDesc = 'CUOTAS ' + cuotas.map(c => String(c.Numero_Cuota).padStart(2,'0')).join(',') + '/' + totalStr;
+        const montoTrx     = trx.Monto_Total || 0;
+        const primerCodigo = cuotas.length > 0 ? cuotas[0].Codigo_Verificacion : (trx.Ticket_ID_Grupo || '');
+        add(fmtFechaHora(trx.Fecha_Pago));
+        add(cuotasDesc + ' --- ' + fmtGs(montoTrx));
+        // Imprimir codigo de barras por cada cuota individual
+        cuotas.forEach(c => {
+          addBarcode(c.Codigo_Verificacion);
+          addCenter(mayus(c.Codigo_Verificacion), 0, 0);
+        });
+        if (cuotas.length === 0 && primerCodigo) {
+          addBarcode(primerCodigo);
+          addCenter(mayus(primerCodigo), 0, 0);
+        }
         sp();
       });
     } else {
@@ -224,7 +239,7 @@ async function imprimirTicketBluetooth(datos) {
       sp();
     }
     add(sep);
-    add('MONTO RECIBIDO: ' + fmtGs(datos.pagos ? datos.pagos.reduce((sum, p) => sum + p.Monto_Pagado, 0) : 0));
+    add('MONTO RECIBIDO: ' + fmtGs(datos.pagos ? datos.pagos.reduce((sum, t) => sum + (t.Monto_Total || t.Monto_Pagado || 0), 0) : 0));
     add('SALDO RESTANTE: ' + fmtGs(datos.saldoRestante));
     if (datos.proximaFecha) add('PROX. VENCIMIENTO: ' + fmtFecha(datos.proximaFecha));
     if (datos.fechaPagare) add('VENCIMIENTO PAGARE: ' + fmtFecha(datos.fechaPagare));
