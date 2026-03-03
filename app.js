@@ -84,7 +84,7 @@ function mostrarConfirmacion(msg) {
 // HELPERS
 // ============================================
 function hideAll() {
-  ['loginPage','dashboardPage','clientesPage','formClientePage','detalleClientePage','ventasPage','listadoVentasPage','cobranzasPage','verificadorPage'].forEach(id=>{
+  ['loginPage','dashboardPage','clientesPage','formClientePage','detalleClientePage','ventasPage','listadoVentasPage','cobranzasPage','verificadorPage','informesPage'].forEach(id=>{
     const el=document.getElementById(id); if(el) el.classList.add('hidden');
   });
 }
@@ -1435,4 +1435,255 @@ function vFilaColor(label, valor, color, fs) {
 function limpiarVerificacion() {
   document.getElementById('resultadoVerificacion').innerHTML = '';
   setModoVerificador(_modoVerif); // reinicia el modo actual
+}
+
+// ============================================================
+// MÓDULO INFORMES
+// ============================================================
+let _informesData = null;
+let _chartCobros  = null;
+let _chartVentas  = null;
+let _vencMode     = 'hoy';
+
+async function showInformes() {
+  hideAll();
+  document.getElementById('informesPage').classList.remove('hidden');
+  // Reset charts
+  if (_chartCobros) { _chartCobros.destroy(); _chartCobros = null; }
+  if (_chartVentas) { _chartVentas.destroy(); _chartVentas = null; }
+  document.getElementById('iCartera').textContent  = '...';
+  document.getElementById('iVencido').textContent  = '...';
+  document.getElementById('iMora').textContent     = '...';
+  document.getElementById('iCobroMes').textContent = '...';
+  document.getElementById('iMargen').textContent   = '...';
+  document.getElementById('tablaVencimientos').innerHTML = '<div class="loading">CARGANDO...</div>';
+  document.getElementById('tablaMora').innerHTML         = '<div class="loading">CARGANDO...</div>';
+  document.getElementById('tablaRentabilidad').innerHTML = '<div class="loading">CARGANDO...</div>';
+
+  const data = await getInformesAPI();
+  if (!data || data.error) {
+    document.getElementById('tablaVencimientos').innerHTML = '<div class="empty">Error al cargar datos</div>';
+    return;
+  }
+  _informesData = data;
+
+  // ── TARJETAS ──
+  document.getElementById('iCartera').textContent  = fmtGs(data.carteraActiva);
+  document.getElementById('iVencido').textContent  = fmtGs(data.totalVencido);
+  document.getElementById('iMora').textContent     = data.porcentajeMora + '%';
+  document.getElementById('iCobroMes').textContent = fmtGs(data.cobroEsperadoMes);
+  document.getElementById('iMargen').textContent   = (data.margenPromedio||0) + '%';
+
+  // ── GRÁFICOS ──
+  const mesesLabel = (k) => {
+    const [y,m] = k.split('-');
+    const nombres = ['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
+    return nombres[parseInt(m)-1] + ' ' + y.slice(2);
+  };
+  const chartOpts = (label, color) => ({
+    type: 'bar',
+    options: {
+      responsive: true, plugins: { legend: { display: false } },
+      scales: {
+        y: { ticks: { callback: v => 'GS '+Math.round(v/1000000)+'M', font:{size:10} }, grid:{color:'#f1f5f9'} },
+        x: { ticks: { font:{size:10} }, grid:{display:false} }
+      }
+    }
+  });
+
+  if (data.cobrosPorMes && data.cobrosPorMes.length) {
+    _chartCobros = new Chart(document.getElementById('chartCobros'), {
+      type:'bar',
+      data:{
+        labels: data.cobrosPorMes.map(r=>mesesLabel(r.mes)),
+        datasets:[{label:'Cobros',data:data.cobrosPorMes.map(r=>r.total),
+          backgroundColor:'#3b82f6',borderRadius:6}]
+      },
+      options:{ responsive:true, plugins:{legend:{display:false}},
+        scales:{
+          y:{ticks:{callback:v=>'GS '+Math.round(v/1000000)+'M',font:{size:10}},grid:{color:'#f1f5f9'}},
+          x:{ticks:{font:{size:10}},grid:{display:false}}
+        }
+      }
+    });
+  }
+  if (data.ventasMensuales && data.ventasMensuales.length) {
+    _chartVentas = new Chart(document.getElementById('chartVentas'), {
+      type:'bar',
+      data:{
+        labels: data.ventasMensuales.map(r=>mesesLabel(r.mes)),
+        datasets:[{label:'Ventas',data:data.ventasMensuales.map(r=>r.total),
+          backgroundColor:'#10b981',borderRadius:6}]
+      },
+      options:{ responsive:true, plugins:{legend:{display:false}},
+        scales:{
+          y:{ticks:{callback:v=>'GS '+Math.round(v/1000000)+'M',font:{size:10}},grid:{color:'#f1f5f9'}},
+          x:{ticks:{font:{size:10}},grid:{display:false}}
+        }
+      }
+    });
+  }
+
+  // ── TABLAS ──
+  mostrarVencimientos('hoy');
+  renderMora(data.moraLista);
+  renderRentabilidad(data.rentabilidad, data.totalInversion, data.totalGanancia);
+}
+
+function mostrarVencimientos(modo) {
+  _vencMode = modo;
+  if (!_informesData) return;
+  const map = { hoy:'vencimientosHoy', manana:'vencimientosManana', semana:'vencimientos7dias' };
+  const lista = _informesData[map[modo]] || [];
+  ['btnVHoy','btnVMan','btnVSem'].forEach(id => document.getElementById(id).className='btn btn-secondary');
+  const activeMap = {hoy:'btnVHoy',manana:'btnVMan',semana:'btnVSem'};
+  document.getElementById(activeMap[modo]).className='btn';
+
+  if (!lista.length) {
+    document.getElementById('tablaVencimientos').innerHTML = '<div class="empty">Sin vencimientos para este período</div>';
+    return;
+  }
+  let total = 0;
+  let html = '<table style="width:100%;border-collapse:collapse;font-size:13px;">'
+    + '<thead><tr style="border-bottom:2px solid #e2e8f0;">'
+    + '<th style="text-align:left;padding:8px 6px;color:var(--muted);font-weight:600;">CLIENTE</th>'
+    + '<th style="text-align:center;padding:8px 6px;color:var(--muted);font-weight:600;">CUOTA</th>'
+    + '<th style="text-align:center;padding:8px 6px;color:var(--muted);font-weight:600;">VENCE</th>'
+    + '<th style="text-align:right;padding:8px 6px;color:var(--muted);font-weight:600;">MONTO</th>'
+    + '<th style="text-align:center;padding:8px 6px;color:var(--muted);font-weight:600;">WA</th>'
+    + '</tr></thead><tbody>';
+  lista.forEach(r => {
+    total += r.monto;
+    const dias = r.diasRestantes;
+    const tag = dias < 0
+      ? `<span style="color:#ef4444;font-weight:600;">${Math.abs(dias)}d vencida</span>`
+      : dias === 0 ? '<span style="color:#f59e0b;font-weight:600;">HOY</span>'
+      : `<span style="color:#10b981;">en ${dias}d</span>`;
+    const tel = formatTelWA(r.tel);
+    const wa = tel ? `<a href="https://wa.me/${tel}" target="_blank" style="text-decoration:none;">📱</a>` : '—';
+    html += `<tr style="border-bottom:1px solid #f1f5f9;">
+      <td style="padding:9px 6px;font-weight:500;">${r.nombre}</td>
+      <td style="padding:9px 6px;text-align:center;">${String(r.numeroCuota).padStart(2,'0')}/${String(r.totalCuotas).padStart(2,'0')}</td>
+      <td style="padding:9px 6px;text-align:center;">${fmtFecha(r.fechaVenc)}<br><small>${tag}</small></td>
+      <td style="padding:9px 6px;text-align:right;font-weight:600;">${fmtGs(r.monto)}</td>
+      <td style="padding:9px 6px;text-align:center;">${wa}</td>
+    </tr>`;
+  });
+  html += `</tbody><tfoot><tr style="border-top:2px solid #e2e8f0;background:#f8fafc;">
+    <td colspan="3" style="padding:10px 6px;font-weight:700;">TOTAL</td>
+    <td style="padding:10px 6px;text-align:right;font-weight:700;color:#3b82f6;">${fmtGs(total)}</td>
+    <td></td>
+  </tr></tfoot></table>`;
+  document.getElementById('tablaVencimientos').innerHTML = html;
+}
+
+function renderMora(lista) {
+  if (!lista || !lista.length) {
+    document.getElementById('tablaMora').innerHTML = '<div class="empty" style="color:#10b981;">✅ Sin mora activa</div>';
+    return;
+  }
+  let html = '<table style="width:100%;border-collapse:collapse;font-size:13px;">'
+    + '<thead><tr style="border-bottom:2px solid #e2e8f0;">'
+    + '<th style="text-align:left;padding:8px 6px;color:var(--muted);font-weight:600;">CLIENTE</th>'
+    + '<th style="text-align:center;padding:8px 6px;color:var(--muted);font-weight:600;">CUOTAS</th>'
+    + '<th style="text-align:right;padding:8px 6px;color:var(--muted);font-weight:600;">VENCIDO</th>'
+    + '<th style="text-align:center;padding:8px 6px;color:var(--muted);font-weight:600;">DÍAS</th>'
+    + '<th style="text-align:center;padding:8px 6px;color:var(--muted);font-weight:600;">WA</th>'
+    + '</tr></thead><tbody>';
+  lista.forEach(r => {
+    const color = r.maxDias > 90 ? '#ef4444' : r.maxDias > 30 ? '#f59e0b' : '#64748b';
+    const tel = formatTelWA(r.tel);
+    const wa = tel ? `<a href="https://wa.me/${tel}" target="_blank" style="text-decoration:none;">📱</a>` : '—';
+    html += `<tr style="border-bottom:1px solid #f1f5f9;">
+      <td style="padding:9px 6px;font-weight:500;">${r.nombre}</td>
+      <td style="padding:9px 6px;text-align:center;">${r.cuotasVencidas}</td>
+      <td style="padding:9px 6px;text-align:right;font-weight:600;color:#ef4444;">${fmtGs(r.saldoVencido)}</td>
+      <td style="padding:9px 6px;text-align:center;font-weight:700;color:${color};">${r.maxDias}d</td>
+      <td style="padding:9px 6px;text-align:center;">${wa}</td>
+    </tr>`;
+  });
+  html += '</tbody></table>';
+  document.getElementById('tablaMora').innerHTML = html;
+}
+
+function renderRentabilidad(lista, totalInv, totalGan) {
+  if (!lista || !lista.length) {
+    document.getElementById('tablaRentabilidad').innerHTML = '<div class="empty">Sin ventas con costo cargado</div>';
+    return;
+  }
+  let html = '<table style="width:100%;border-collapse:collapse;font-size:13px;">'
+    + '<thead><tr style="border-bottom:2px solid #e2e8f0;">'
+    + '<th style="text-align:left;padding:8px 6px;color:var(--muted);font-weight:600;">CLIENTE</th>'
+    + '<th style="text-align:right;padding:8px 6px;color:var(--muted);font-weight:600;">PRECIO</th>'
+    + '<th style="text-align:right;padding:8px 6px;color:var(--muted);font-weight:600;">COSTO</th>'
+    + '<th style="text-align:right;padding:8px 6px;color:var(--muted);font-weight:600;">GANANCIA</th>'
+    + '<th style="text-align:center;padding:8px 6px;color:var(--muted);font-weight:600;">%</th>'
+    + '</tr></thead><tbody>';
+  lista.slice(0,30).forEach(r => {
+    const colorM = r.margen >= 20 ? '#10b981' : r.margen >= 10 ? '#f59e0b' : '#ef4444';
+    html += `<tr style="border-bottom:1px solid #f1f5f9;">
+      <td style="padding:8px 6px;">
+        <div style="font-weight:500;font-size:12px;">${r.cliente}</div>
+        <div style="font-size:11px;color:var(--muted);">${fmtFecha(r.fecha)}</div>
+      </td>
+      <td style="padding:8px 6px;text-align:right;">${fmtGs(r.precio)}</td>
+      <td style="padding:8px 6px;text-align:right;color:var(--muted);">${fmtGs(r.costo)}</td>
+      <td style="padding:8px 6px;text-align:right;font-weight:600;color:#10b981;">${fmtGs(r.ganancia)}</td>
+      <td style="padding:8px 6px;text-align:center;font-weight:700;color:${colorM};">${r.margen}%</td>
+    </tr>`;
+  });
+  const margenTotal = (totalInv+totalGan) > 0 ? Math.round((totalGan/(totalInv+totalGan))*100) : 0;
+  html += `</tbody><tfoot><tr style="border-top:2px solid #e2e8f0;background:#f8fafc;">
+    <td style="padding:10px 6px;font-weight:700;">TOTAL</td>
+    <td style="padding:10px 6px;text-align:right;font-weight:700;">${fmtGs(totalInv+totalGan)}</td>
+    <td style="padding:10px 6px;text-align:right;font-weight:700;color:var(--muted);">${fmtGs(totalInv)}</td>
+    <td style="padding:10px 6px;text-align:right;font-weight:700;color:#10b981;">${fmtGs(totalGan)}</td>
+    <td style="padding:10px 6px;text-align:center;font-weight:700;color:#8b5cf6;">${margenTotal}%</td>
+  </tr></tfoot></table>`;
+  document.getElementById('tablaRentabilidad').innerHTML = html;
+}
+
+function imprimirVencimientos() {
+  if (!_informesData) return;
+  const map  = { hoy:'vencimientosHoy', manana:'vencimientosManana', semana:'vencimientos7dias' };
+  const titMap = { hoy:'COBROS DEL DÍA', manana:'COBROS DE MAÑANA', semana:'COBROS PRÓXIMOS 7 DÍAS' };
+  const lista = _informesData[map[_vencMode]] || [];
+  const hoy = new Date().toLocaleDateString('es-PY');
+  let total = 0;
+  let filas = lista.map(r => {
+    total += r.monto;
+    return `<tr>
+      <td>${r.nombre}</td>
+      <td style="text-align:center;">${String(r.numeroCuota).padStart(2,'0')}/${String(r.totalCuotas).padStart(2,'0')}</td>
+      <td style="text-align:center;">${new Date(r.fechaVenc).toLocaleDateString('es-PY')}</td>
+      <td style="text-align:right;">${fmtGs(r.monto)}</td>
+    </tr>`;
+  }).join('');
+
+  const win = window.open('','_blank');
+  win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8">
+  <title>${titMap[_vencMode]}</title>
+  <style>
+    body{font-family:Arial,sans-serif;font-size:12px;margin:20px;color:#111;}
+    h2{margin-bottom:4px;font-size:16px;}
+    .sub{color:#555;margin-bottom:16px;font-size:11px;}
+    table{width:100%;border-collapse:collapse;}
+    th{background:#1e293b;color:white;padding:8px 10px;text-align:left;font-size:11px;}
+    td{padding:7px 10px;border-bottom:1px solid #e2e8f0;}
+    tr:nth-child(even){background:#f8fafc;}
+    tfoot td{border-top:2px solid #1e293b;font-weight:700;background:#f1f5f9;}
+    @media print{body{margin:10px;}button{display:none;}}
+  </style></head><body>
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+    <div><h2>TECH MARKET — ${titMap[_vencMode]}</h2><div class="sub">Generado: ${hoy} | Total registros: ${lista.length}</div></div>
+    <button onclick="window.print()" style="padding:8px 16px;background:#1e293b;color:white;border:none;border-radius:6px;cursor:pointer;font-size:12px;">🖨️ Imprimir</button>
+  </div>
+  <table>
+    <thead><tr><th>CLIENTE</th><th style="text-align:center;">CUOTA</th><th style="text-align:center;">VENCIMIENTO</th><th style="text-align:right;">MONTO</th></tr></thead>
+    <tbody>${filas}</tbody>
+    <tfoot><tr><td colspan="3">TOTAL</td><td style="text-align:right;">${fmtGs(total)}</td></tr></tfoot>
+  </table>
+  </body></html>`);
+  win.document.close();
+  setTimeout(()=>win.print(), 500);
 }
