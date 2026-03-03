@@ -207,32 +207,45 @@ async function imprimirTicketBluetooth(datos) {
     if (datos.productoDesc) add('PRODUCTO: ' + mayus(datos.productoDesc));
     add('TOTAL: ' + fmtGs(datos.totalVenta));
     add(sep);
-    add('CUOTAS PAGADAS:');
+    add('HISTORIAL DE COBROS:');
     sp();
     if (datos.pagos && datos.pagos.length > 0) {
-      datos.pagos.forEach(trx => {
-        // Nuevo formato agrupado: cada trx tiene Cuotas[] y Monto_Total
+      datos.pagos.forEach((trx, idx) => {
         const cuotas   = (trx.Cuotas && trx.Cuotas.length > 0) ? trx.Cuotas : [];
         const nCuotas  = cuotas.length;
         const totalStr = String(trx.Total_Cuotas || '?').padStart(2,'0');
-        let cuotasDesc;
-        if (nCuotas === 0)      cuotasDesc = 'PAGO';
-        else if (nCuotas === 1) cuotasDesc = 'CUOTA ' + String(cuotas[0].Numero_Cuota).padStart(2,'0') + '/' + totalStr;
-        else                    cuotasDesc = 'CUOTAS ' + cuotas.map(c => String(c.Numero_Cuota).padStart(2,'0')).join(',') + '/' + totalStr;
-        const montoTrx     = trx.Monto_Total || 0;
-        const primerCodigo = cuotas.length > 0 ? cuotas[0].Codigo_Verificacion : (trx.Ticket_ID_Grupo || '');
-        add(fmtFechaHora(trx.Fecha_Pago));
-        add(cuotasDesc + ' --- ' + fmtGs(montoTrx));
-        // Imprimir codigo de barras por cada cuota individual
-        cuotas.forEach(c => {
-          addBarcode(c.Codigo_Verificacion);
-          addCenter(mayus(c.Codigo_Verificacion), 0, 0);
-        });
-        if (cuotas.length === 0 && primerCodigo) {
-          addBarcode(primerCodigo);
-          addCenter(mayus(primerCodigo), 0, 0);
+        const montoTrx = trx.Monto_Total || 0;
+
+        // Fecha sin segundos - mas corta
+        const fd = trx.Fecha_Pago ? new Date(trx.Fecha_Pago) : new Date();
+        const fechaCorta = fd.toLocaleDateString('es-PY')
+          + ' ' + fd.toLocaleTimeString('es-PY',{hour:'2-digit',minute:'2-digit'});
+
+        // COBRO 01 - 3/3/2026 09:25
+        add('COBRO ' + String(idx+1).padStart(2,'0') + ' - ' + fechaCorta);
+
+        // Cuotas en su propia linea (no se mezcla con el monto)
+        if (nCuotas === 1) {
+          add('CUOTA:  ' + String(cuotas[0].Numero_Cuota).padStart(2,'0') + '/' + totalStr);
+        } else if (nCuotas > 1) {
+          add('CUOTAS: ' + cuotas.map(c => String(c.Numero_Cuota).padStart(2,'0')).join(', ') + '/' + totalStr);
         }
-        sp();
+
+        // Monto en su propia linea - nunca se corta
+        add('MONTO:  ' + fmtGs(montoTrx));
+
+        // UN solo codigo de barras por cobro
+        const codigoVerif = cuotas.length > 0 ? cuotas[0].Codigo_Verificacion : '';
+        if (codigoVerif) {
+          sp();
+          addBarcode(codigoVerif);
+          addCenter(mayus(codigoVerif));
+          // Demas codigos del grupo solo en texto (sin barcode extra)
+          for (let ci = 1; ci < cuotas.length; ci++) {
+            addCenter(mayus(cuotas[ci].Codigo_Verificacion));
+          }
+        }
+        add(sep);
       });
     } else {
       add('SIN PAGOS REGISTRADOS');
