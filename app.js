@@ -390,19 +390,30 @@ async function verDetalleVenta(idVenta) {
     </div>`;
   }).join('');
 
-  // Historial de pagos con botón reimprimir
-  const pagosHtml = pagos.length ? pagos.map(p => `
-    <div style="padding:8px 0;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
-      <div>
-        <div style="font-size:13px;font-weight:600;">CUOTA ${p.Numero_Cuota}/${p.Total_Cuotas} · ${fmtFecha(p.Fecha_Pago)}</div>
-        <div style="font-size:12px;color:var(--muted);">${p.Codigo_Verificacion}</div>
-        <div style="font-size:12px;color:var(--success);">COBRADO: ${fmtGs(p.Monto_Pagado)}</div>
+  // Historial: UNA entrada por transaccion (el backend ya agrupa por Ticket_ID_Grupo)
+  const pagosHtml = pagos.length ? pagos.map(trx => {
+    const cantCuotas = trx.Cuotas ? trx.Cuotas.length : 1;
+    // Descripcion: "CUOTA 02/12" o "CUOTAS 02, 03, 04 /12"
+    const cuotasDesc = cantCuotas > 1
+      ? 'CUOTAS ' + trx.Cuotas.map(c => String(c.Numero_Cuota).padStart(2,'0')).join(', ') + '/' + String(trx.Total_Cuotas).padStart(2,'0')
+      : 'CUOTA ' + String(trx.Cuotas[0].Numero_Cuota).padStart(2,'0') + '/' + String(trx.Total_Cuotas).padStart(2,'0');
+    // Mostrar todos los codigos de barras en gris chico
+    const codigosDesc = trx.Cuotas.map(c => c.Codigo_Verificacion).join(' · ');
+    const primerCodigo = trx.Cuotas[0].Codigo_Verificacion;
+    const tIdGrupo = trx.Ticket_ID_Grupo || '';
+    return `
+    <div style="padding:10px 0;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:13px;font-weight:700;">${cuotasDesc} &nbsp;·&nbsp; ${fmtFecha(trx.Fecha_Pago)}</div>
+        <div style="font-size:11px;color:var(--muted);word-break:break-all;">${codigosDesc}</div>
+        <div style="font-size:13px;color:var(--success);font-weight:600;">COBRADO: ${fmtGs(trx.Monto_Total)}</div>
       </div>
-      <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end;">
-        <button onclick="reimprimirPago(${JSON.stringify(p).replace(/"/g,'&quot;')})" style="background:var(--bg);border:1px solid var(--border);padding:4px 8px;border-radius:8px;cursor:pointer;font-size:12px;">🖨️</button>
-        <button onclick="mostrarAnularPago('${p.ID_Pago}','${p.Codigo_Verificacion}')" style="background:#fee2e2;border:none;padding:4px 8px;border-radius:8px;cursor:pointer;font-size:12px;color:#991b1b;">✕</button>
+      <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end;margin-left:8px;">
+        <button onclick="reimprimirPagoGrupo('${tIdGrupo}')" style="background:var(--bg);border:1px solid var(--border);padding:6px 10px;border-radius:8px;cursor:pointer;font-size:14px;">🖨️</button>
+        <button onclick="mostrarAnularPago('${tIdGrupo}','${primerCodigo}')" style="background:#fee2e2;border:none;padding:6px 10px;border-radius:8px;cursor:pointer;font-size:14px;color:#991b1b;">✕</button>
       </div>
-    </div>`).join('') : '<div style="color:var(--muted);font-size:13px;padding:8px 0;">SIN PAGOS REGISTRADOS</div>';
+    </div>`;
+  }).join('') : '<div style="color:var(--muted);font-size:13px;padding:8px 0;">SIN PAGOS REGISTRADOS</div>';
 
   const modal = document.createElement('div');
   modal.id = 'modalDetalleVenta';
@@ -444,29 +455,36 @@ async function verDetalleVenta(idVenta) {
 // ============================================
 // REIMPRESIÓN
 // ============================================
+// Reimprime el ticket unificado de un cobro (nuevo flujo con ticketIdGrupo)
+async function reimprimirPagoGrupo(ticketIdGrupo) {
+  if (!ticketIdGrupo) { toast('SIN TICKET GUARDADO', 'warning'); return; }
+  await imprimirTicketGuardado(ticketIdGrupo);
+}
+
+// Legacy: mantener por si se llama con objeto pago antiguo
 async function reimprimirPago(pago) {
-  // Si tiene Ticket_ID guardado, reenviar exactamente el mismo ticket original
-  if (pago.Ticket_ID) {
+  if (pago && pago.Ticket_ID) {
     await imprimirTicketGuardado(pago.Ticket_ID);
     return;
   }
-  // Fallback para pagos anteriores sin Ticket_ID: reimprimir desde datos
-  const cliente = APP.clientes.find(c => c.ID_Cliente === pago.ID_Cliente);
-  await imprimirTicketBluetooth({
-    tipo: 'pago',
-    nombreCliente: pago.Nombre_Cliente,
-    clienteDoc: cliente ? cliente.CI_RUC : '',
-    numeroPedido: pago.ID_Venta,
-    codigoVerif: pago.Codigo_Verificacion,
-    montoPago: pago.Monto_Pagado,
-    saldoRestante: pago.Saldo_Restante,
-    proximaFecha: pago.Proxima_Fecha,
-    productoDesc: pago.Producto,
-    numeroCuota: pago.Numero_Cuota,
-    totalCuotas: pago.Total_Cuotas,
-    cobrador: pago.Cobrador,
-    fechaPago: pago.Fecha_Pago
-  });
+  if (pago && pago.ID_Pago) {
+    const cliente = APP.clientes.find(c => c.ID_Cliente === pago.ID_Cliente);
+    await imprimirTicketBluetooth({
+      tipo: 'pago',
+      nombreCliente: pago.Nombre_Cliente,
+      clienteDoc: cliente ? cliente.CI_RUC : '',
+      numeroPedido: pago.ID_Venta,
+      codigoVerif: pago.Codigo_Verificacion,
+      montoPago: pago.Monto_Pagado,
+      saldoRestante: pago.Saldo_Restante,
+      proximaFecha: pago.Proxima_Fecha,
+      productoDesc: pago.Producto,
+      numeroCuota: pago.Numero_Cuota,
+      totalCuotas: pago.Total_Cuotas,
+      cobrador: pago.Cobrador,
+      fechaPago: pago.Fecha_Pago
+    });
+  }
 }
 
 // Imprime un ticket ya guardado en TICKETS_TEMP usando su ID
@@ -547,38 +565,39 @@ async function confirmarAnularVenta(idVenta) {
   } else toast(result.error||'ERROR AL ANULAR','error',4000);
 }
 
-function mostrarAnularPago(idPago, codigoVerif) {
+function mostrarAnularPago(idGrupo, codigoVerif) {
   const existing = document.getElementById('modalAnulacion'); if(existing) existing.remove();
   const modal = document.createElement('div');
   modal.id = 'modalAnulacion';
   modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:6000;display:flex;align-items:center;justify-content:center;padding:20px;';
   const optsHtml = MOTIVOS_ANULACION.map(m => `<option value="${m}">${m}</option>`).join('');
   modal.innerHTML = `<div style="background:white;border-radius:20px;padding:28px;width:100%;max-width:440px;">
-    <div style="font-size:18px;font-weight:800;color:#ef4444;margin-bottom:6px;">🚫 ANULAR PAGO</div>
-    <div style="font-size:13px;color:var(--muted);margin-bottom:20px;">${codigoVerif}</div>
+    <div style="font-size:18px;font-weight:800;color:#ef4444;margin-bottom:6px;">🚫 ANULAR COBRO</div>
+    <div style="font-size:12px;color:#ef4444;font-weight:600;margin-bottom:4px;">SE ANULARÁN TODOS LOS PAGOS DE ESTE COBRO</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:20px;">${codigoVerif}</div>
     <label style="font-weight:600;display:block;margin-bottom:6px;font-size:14px;">MOTIVO DE ANULACIÓN</label>
     <select id="motivoAnulacion" style="width:100%;padding:12px;border:2px solid var(--border);border-radius:12px;font-size:14px;box-sizing:border-box;margin-bottom:12px;">${optsHtml}</select>
     <label style="font-weight:600;display:block;margin-bottom:6px;font-size:14px;">OBSERVACIÓN (OPCIONAL)</label>
     <textarea id="obsAnulacion" style="width:100%;padding:12px;border:2px solid var(--border);border-radius:12px;font-size:14px;box-sizing:border-box;min-height:80px;resize:none;" placeholder="DETALLES ADICIONALES..."></textarea>
     <div style="display:flex;gap:10px;margin-top:16px;">
       <button onclick="document.getElementById('modalAnulacion').remove()" class="btn btn-secondary" style="flex:1;">CANCELAR</button>
-      <button onclick="confirmarAnularPago('${idPago}')" style="flex:1;padding:14px;background:#ef4444;color:white;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;">CONFIRMAR</button>
+      <button onclick="confirmarAnularPago('${idGrupo}')" style="flex:1;padding:14px;background:#ef4444;color:white;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;">CONFIRMAR</button>
     </div>
   </div>`;
   document.body.appendChild(modal);
 }
 
-async function confirmarAnularPago(idPago) {
+async function confirmarAnularPago(idGrupo) {
   const motivo = document.getElementById('motivoAnulacion').value;
   const obs = document.getElementById('obsAnulacion').value;
+  if (!motivo) { toast('SELECCIONA UN MOTIVO', 'warning'); return; }
   document.getElementById('modalAnulacion').remove();
-  showLoader('ANULANDO PAGO...');
-  const result = await anularPagoAPI({ idPago, motivo, observacion:obs, usuario:APP.user.nombre });
+  showLoader('ANULANDO COBRO...');
+  const result = await anularPagoAPI({ idGrupo, motivo, observacion:obs, usuario:APP.user.nombre });
   hideLoader();
   if (result.success) {
-    const mensaje = result.pagosAnulados > 1 ? 
-      result.pagosAnulados + ' PAGOS ANULADOS' : 'PAGO ANULADO';
-    mostrarConfirmacion(mensaje);
+    const cant = result.pagosAnulados || 1;
+    mostrarConfirmacion(cant > 1 ? cant + ' PAGOS ANULADOS' : 'PAGO ANULADO');
     setTimeout(()=>{ 
       const mv = document.getElementById('modalDetalleVenta'); 
       if(mv) mv.remove();
