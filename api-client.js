@@ -87,4 +87,8 @@ async function guardarTicketAPI(ticketId, jsonData) {
   try { const r = await jsonp(API_URL, {action:'guardarTicket', data:b64({ticketId,jsonData})}); return r.success; } catch(e) { return false; }
 }
 
+async function verificarCodigoAPI(codigo) {
+  try { return await jsonp(API_URL, {action:'verificarCodigo', data:b64({codigo})}); } catch(e) { return {success:false,valido:false,error:e.message}; }
+}
+
 console.log('🚀 API Client v1.2 cargado');
