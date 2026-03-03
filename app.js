@@ -399,18 +399,13 @@ async function verDetalleVenta(idVenta) {
 
   // Historial: UNA entrada por transaccion (el backend ya agrupa por Ticket_ID_Grupo)
   const pagosHtml = pagos.length ? pagos.map(trx => {
-    // Null checks seguros - si Cuotas no existe o está vacío el modal no crashea
-    const cuotas     = (trx.Cuotas && trx.Cuotas.length > 0) ? trx.Cuotas : [];
-    const nCuotas    = cuotas.length;
-    const totalStr   = String(trx.Total_Cuotas || '?').padStart(2, '0');
+    const cuotas   = (trx.Cuotas && trx.Cuotas.length > 0) ? trx.Cuotas : [];
+    const nCuotas  = cuotas.length;
+    const totalStr = String(trx.Total_Cuotas || '?').padStart(2,'0');
     let cuotasDesc;
-    if (nCuotas === 0) {
-      cuotasDesc = 'PAGO';
-    } else if (nCuotas === 1) {
-      cuotasDesc = 'CUOTA ' + String(cuotas[0].Numero_Cuota).padStart(2,'0') + '/' + totalStr;
-    } else {
-      cuotasDesc = 'CUOTAS ' + cuotas.map(c => String(c.Numero_Cuota).padStart(2,'0')).join(', ') + '/' + totalStr;
-    }
+    if (nCuotas === 0)      cuotasDesc = 'PAGO';
+    else if (nCuotas === 1) cuotasDesc = 'CUOTA '  + String(cuotas[0].Numero_Cuota).padStart(2,'0') + '/' + totalStr;
+    else                    cuotasDesc = 'CUOTAS ' + cuotas.map(c => String(c.Numero_Cuota).padStart(2,'0')).join(', ') + '/' + totalStr;
     const codigosDesc  = cuotas.map(c => c.Codigo_Verificacion).join(' · ');
     const primerCodigo = nCuotas > 0 ? cuotas[0].Codigo_Verificacion : '';
     const tIdGrupo     = trx.Ticket_ID_Grupo || '';
@@ -1200,15 +1195,18 @@ console.log('🚀 TECH MARKET v4.0');
 
 
 // ============================================
-// VERIFICADOR DE CODIGOS DE BARRAS
+// VERIFICADOR DE CODIGOS - 3 modos
 // ============================================
+
+let _modoVerif = 'camara'; // camara | texto | lector
+let _lectorBuffer = '';
+let _lectorTimer  = null;
 
 async function showVerificador() {
   hideAll();
   document.getElementById('verificadorPage').classList.remove('hidden');
   document.getElementById('resultadoVerificacion').innerHTML = '';
-  document.getElementById('codigoVerifInput').value = '';
-  iniciarEscanerQR();
+  setModoVerificador('camara');
 }
 
 function salirVerificador() {
@@ -1216,34 +1214,60 @@ function salirVerificador() {
   showDashboard();
 }
 
+function setModoVerificador(modo) {
+  _modoVerif = modo;
+  detenerEscaner();
+
+  // Resetear botones
+  ['camara','texto','lector'].forEach(m => {
+    const btn = document.getElementById('modoBtn_' + m);
+    const div = document.getElementById('modo_' + m);
+    if (btn) { btn.className = m === modo ? 'btn' : 'btn btn-secondary'; btn.style.flex='1'; btn.style.fontSize='13px'; btn.style.padding='10px 6px'; }
+    if (div) div.style.display = m === modo ? 'block' : 'none';
+  });
+
+  document.getElementById('resultadoVerificacion').innerHTML = '';
+
+  if (modo === 'camara') {
+    iniciarEscanerQR();
+  } else if (modo === 'lector') {
+    const inp = document.getElementById('lectorInput');
+    const st  = document.getElementById('lectorStatus');
+    if (inp) { inp.value = ''; inp.focus(); }
+    if (st)  st.textContent = 'Esperando escaneo...';
+    _lectorBuffer = '';
+  } else {
+    // texto: limpiar e enfocar
+    const inp = document.getElementById('codigoVerifInput');
+    if (inp) { inp.value = ''; setTimeout(() => inp.focus(), 100); }
+  }
+}
+
+// ---- MODO CAMARA ----
 function iniciarEscanerQR() {
   const video  = document.getElementById('qrVideo');
   const canvas = document.getElementById('qrCanvas');
   const status = document.getElementById('qrStatus');
   if (!video || !canvas) return;
 
-  // Detener stream anterior
   if (APP.qrStream) { APP.qrStream.getTracks().forEach(t => t.stop()); APP.qrStream = null; }
   APP.qrScanning = false;
 
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-    if (status) status.textContent = 'Cámara no disponible - ingresá el código manualmente';
-    video.style.display = 'none';
+    if (status) status.textContent = 'Cámara no disponible';
     return;
   }
-
   navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
     .then(stream => {
-      APP.qrStream = stream;
+      APP.qrStream    = stream;
       video.srcObject = stream;
       video.play();
-      APP.qrScanning = true;
+      APP.qrScanning  = true;
       if (status) status.textContent = 'Apuntá la cámara al código de barras';
       escanearFrames(video, canvas, status);
     })
     .catch(() => {
-      if (status) status.textContent = 'Cámara no disponible - ingresá el código manualmente';
-      video.style.display = 'none';
+      if (status) status.textContent = 'Cámara no disponible — usá otro modo';
     });
 }
 
@@ -1257,15 +1281,15 @@ function escanearFrames(video, canvas, status) {
     try {
       const img  = ctx.getImageData(0, 0, canvas.width, canvas.height);
       const code = typeof jsQR === 'function'
-        ? jsQR(img.data, img.width, img.height, { inversionAttempts: 'dontInvert' })
+        ? jsQR(img.data, img.width, img.height, { inversionAttempts: 'attemptBoth' })
         : null;
       if (code && code.data && code.data.trim()) {
         APP.qrScanning = false;
         if (APP.qrStream) { APP.qrStream.getTracks().forEach(t => t.stop()); APP.qrStream = null; }
-        const codigoDetectado = code.data.trim().toUpperCase();
-        document.getElementById('codigoVerifInput').value = codigoDetectado;
-        if (status) status.textContent = '✅ Código detectado: ' + codigoDetectado;
-        ejecutarVerificacion(codigoDetectado);
+        const cod = code.data.trim().toUpperCase();
+        document.getElementById('codigoVerifInput') && (document.getElementById('codigoVerifInput').value = cod);
+        if (status) status.textContent = '✅ Detectado: ' + cod;
+        ejecutarVerificacion(cod);
         return;
       }
     } catch(e) {}
@@ -1278,6 +1302,32 @@ function detenerEscaner() {
   if (APP.qrStream) { APP.qrStream.getTracks().forEach(t => t.stop()); APP.qrStream = null; }
 }
 
+// ---- MODO LECTOR USB (HID) ----
+// Los lectores USB simulan teclado: mandan caracteres rapido y terminan con Enter
+function lectorKeyHandler(event) {
+  const st = document.getElementById('lectorStatus');
+  if (event.key === 'Enter') {
+    const cod = _lectorBuffer.trim().toUpperCase();
+    _lectorBuffer = '';
+    if (st) st.textContent = '✅ Detectado: ' + cod;
+    if (cod) ejecutarVerificacion(cod);
+  } else if (event.key.length === 1) {
+    _lectorBuffer += event.key;
+    if (st) st.textContent = 'Escaneando: ' + _lectorBuffer;
+    // Timeout: si pasa 500ms sin mas chars, procesar igual
+    clearTimeout(_lectorTimer);
+    _lectorTimer = setTimeout(() => {
+      const cod = _lectorBuffer.trim().toUpperCase();
+      _lectorBuffer = '';
+      if (cod && cod.length > 5) {
+        if (st) st.textContent = '✅ Detectado: ' + cod;
+        ejecutarVerificacion(cod);
+      }
+    }, 500);
+  }
+}
+
+// ---- VERIFICACION COMUN ----
 async function ejecutarVerificacion(codigoParam) {
   const input  = document.getElementById('codigoVerifInput');
   const codigo = (codigoParam || (input ? input.value : '')).trim().toUpperCase();
@@ -1293,6 +1343,7 @@ async function ejecutarVerificacion(codigoParam) {
       <div style="font-size:40px;">❌</div>
       <div style="font-weight:800;color:#ef4444;font-size:16px;margin-top:8px;">ERROR DE CONSULTA</div>
       <div style="font-size:13px;color:var(--muted);margin-top:6px;">${r.error||'Sin conexión'}</div>
+      <button onclick="limpiarVerificacion()" class="btn btn-secondary" style="margin-top:14px;width:100%;">REINTENTAR</button>
     </div>`;
     return;
   }
@@ -1301,64 +1352,56 @@ async function ejecutarVerificacion(codigoParam) {
     res.innerHTML = `<div style="background:#fee2e2;border-radius:14px;padding:20px;text-align:center;">
       <div style="font-size:40px;">🚫</div>
       <div style="font-weight:800;color:#ef4444;font-size:18px;margin-top:8px;">CÓDIGO NO ENCONTRADO</div>
-      <div style="font-size:13px;color:var(--muted);margin-top:6px;">${codigo}</div>
+      <div style="font-size:13px;color:var(--muted);margin-top:6px;font-family:monospace;">${codigo}</div>
       <button onclick="limpiarVerificacion()" class="btn btn-secondary" style="margin-top:14px;width:100%;">ESCANEAR OTRO</button>
     </div>`;
     return;
   }
 
   if (r.anulado) {
-    res.innerHTML = `<div style="background:#fef3c7;border-radius:14px;padding:20px;">
-      <div style="text-align:center;margin-bottom:14px;">
-        <div style="font-size:40px;">⚠️</div>
-        <div style="font-weight:800;color:#92400e;font-size:16px;margin-top:6px;">CÓDIGO ANULADO</div>
-        <div style="font-size:12px;color:#92400e;margin-top:4px;">Este pago fue anulado y no es válido</div>
-      </div>
-      <div style="font-family:monospace;background:rgba(0,0,0,0.07);padding:10px;border-radius:8px;text-align:center;font-size:13px;">${r.codigo}</div>
+    res.innerHTML = `<div style="background:#fef3c7;border-radius:14px;padding:20px;text-align:center;">
+      <div style="font-size:40px;">⚠️</div>
+      <div style="font-weight:800;color:#92400e;font-size:16px;margin-top:6px;">CÓDIGO ANULADO</div>
+      <div style="font-size:12px;color:#92400e;margin-top:4px;">Este pago fue anulado y no es válido</div>
+      <div style="font-family:monospace;background:rgba(0,0,0,0.07);padding:10px;border-radius:8px;margin-top:12px;font-size:13px;">${r.codigo}</div>
       <button onclick="limpiarVerificacion()" class="btn btn-secondary" style="margin-top:14px;width:100%;">ESCANEAR OTRO</button>
     </div>`;
     return;
   }
 
-  // Pago válido y activo
   res.innerHTML = `
-  <div style="background:#d1fae5;border-radius:14px;padding:16px;margin-bottom:12px;">
-    <div style="text-align:center;margin-bottom:12px;">
-      <div style="font-size:44px;">✅</div>
-      <div style="font-weight:800;color:#065f46;font-size:20px;margin-top:4px;">PAGO VÁLIDO</div>
-    </div>
+  <div style="background:#d1fae5;border-radius:14px;padding:16px;margin-bottom:10px;text-align:center;">
+    <div style="font-size:44px;">✅</div>
+    <div style="font-weight:800;color:#065f46;font-size:20px;margin-top:4px;">PAGO VÁLIDO</div>
   </div>
   <div style="background:white;border-radius:14px;padding:16px;box-shadow:var(--shadow);">
-    <div style="display:grid;gap:0;">
-      ${fila('CÓDIGO',    r.codigo,             'monospace')}
-      ${fila('CLIENTE',   r.cliente)}
-      ${fila('FECHA',     fmtFechaHora(r.fechaPago))}
-      ${fila('PRODUCTO',  r.producto)}
-      ${fila('CUOTA',     r.numeroCuota+'/'+r.totalCuotas)}
-      ${filaDestacada('MONTO COBRADO', fmtGs(r.montoPagado), 'var(--success)')}
-      ${filaDestacada('SALDO RESTANTE', fmtGs(r.saldoRestante), r.saldoRestante>0?'var(--danger)':'var(--success)')}
-      ${fila('COBRADOR',  r.cobrador)}
-    </div>
+    ${vFila('CÓDIGO',         r.codigo,                    true)}
+    ${vFila('CLIENTE',        r.cliente)}
+    ${vFila('FECHA',          fmtFechaHora(r.fechaPago))}
+    ${vFila('PRODUCTO',       r.producto)}
+    ${vFila('CUOTA',          r.numeroCuota+'/'+r.totalCuotas)}
+    ${vFilaColor('MONTO COBRADO',   fmtGs(r.montoPagado),   'var(--success)', '17px')}
+    ${vFilaColor('SALDO RESTANTE',  fmtGs(r.saldoRestante), r.saldoRestante>0?'var(--danger)':'var(--success)', '15px')}
+    ${vFila('COBRADOR',       r.cobrador)}
   </div>
   <button onclick="limpiarVerificacion()" class="btn btn-secondary" style="width:100%;margin-top:14px;">🔍 ESCANEAR OTRO</button>`;
 }
 
-function fila(label, valor, fontStyle) {
-  const fs = fontStyle ? `font-family:${fontStyle};` : '';
-  return `<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border);">
-    <span style="color:var(--muted);font-size:13px;flex-shrink:0;">${label}</span>
-    <strong style="text-align:right;font-size:13px;max-width:62%;word-break:break-all;${fs}">${String(valor||'').toUpperCase()}</strong>
+function vFila(label, valor, mono) {
+  const fs = mono ? 'font-family:monospace;font-size:12px;' : 'font-size:13px;';
+  return `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);">
+    <span style="color:var(--muted);font-size:12px;flex-shrink:0;margin-right:8px;">${label}</span>
+    <strong style="text-align:right;max-width:65%;word-break:break-all;${fs}">${String(valor||'').toUpperCase()}</strong>
   </div>`;
 }
-function filaDestacada(label, valor, color) {
-  return `<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border);">
-    <span style="color:var(--muted);font-size:13px;">${label}</span>
-    <strong style="font-size:17px;color:${color};">${valor}</strong>
+function vFilaColor(label, valor, color, fs) {
+  return `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);">
+    <span style="color:var(--muted);font-size:12px;">${label}</span>
+    <strong style="font-size:${fs||'15px'};color:${color};">${valor}</strong>
   </div>`;
 }
 
 function limpiarVerificacion() {
   document.getElementById('resultadoVerificacion').innerHTML = '';
-  document.getElementById('codigoVerifInput').value = '';
-  iniciarEscanerQR();
+  setModoVerificador(_modoVerif); // reinicia el modo actual
 }
