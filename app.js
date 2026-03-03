@@ -181,9 +181,9 @@ async function imprimirTicketBluetooth(datos) {
     add('PRODUCTOS:');
     (datos.productos||[]).forEach(p => {
       add(mayus(p.descripcion));
-      if (datos.garantiaMeses && datos.garantiaMeses > 0) {
+      if (p.serial) add('SERIAL: ' + mayus(p.serial));
+      if (datos.garantiaMeses && datos.garantiaMeses > 0)
         add('GARANTIA: ' + datos.garantiaMeses + ' MESES');
-      }
       add(p.cantidad + 'X ' + fmtGs(p.precio));
     });
     add(sep);
@@ -816,6 +816,7 @@ function renderCarrito() {
     const sub = item.cantidad*item.precio; total+=sub;
     html+=`<div class="carrito-item">
       <div class="item-desc">${item.descripcion}</div>
+      ${item.serial?'<div style="font-size:12px;color:var(--muted);margin:2px 0;">SN: '+item.serial+'</div>':''}
       <div class="item-info">
         <span>${item.cantidad} X ${fmtGs(item.precio)} = ${fmtGs(sub)}</span>
         ${item.costo>0?'<span style="color:var(--muted);font-size:12px;">COSTO: '+fmtGs(item.costo)+'</span>':''}
@@ -828,17 +829,19 @@ function renderCarrito() {
   document.getElementById('ventaTotalInput').value=total;
 }
 function agregarItemCarrito() {
-  const desc = mayus(document.getElementById('itemDesc').value.trim());
-  const cant = parseInt(document.getElementById('itemCantidad').value)||1;
-  const precio = parseFloat(document.getElementById('itemPrecio').value)||0;
-  const costo = parseFloat(document.getElementById('itemCosto').value)||0;
-  if (!desc) { toast('INGRESÁ LA DESCRIPCIÓN','warning'); return; }
+  const desc   = mayus(document.getElementById('itemDesc').value.trim());
+  const cant   = parseInt(document.getElementById('itemCantidad').value)||1;
+  const precio = obtenerValorNumerico(document.getElementById('itemPrecio'));
+  const costo  = obtenerValorNumerico(document.getElementById('itemCosto'));
+  const serial = mayus((document.getElementById('itemSerial')||{value:''}).value.trim());
+  if (!desc)     { toast('INGRESÁ LA DESCRIPCIÓN','warning'); return; }
   if (precio<=0) { toast('INGRESÁ UN PRECIO VÁLIDO','warning'); return; }
-  APP.ventaActual.push({descripcion:desc,cantidad:cant,precio,costo});
+  APP.ventaActual.push({descripcion:desc,cantidad:cant,precio,costo,serial});
   document.getElementById('itemDesc').value='';
   document.getElementById('itemCantidad').value='1';
   document.getElementById('itemPrecio').value='';
   document.getElementById('itemCosto').value='';
+  const s = document.getElementById('itemSerial'); if(s) s.value='';
   renderCarrito(); toast('PRODUCTO AGREGADO','success',1500);
 }
 function eliminarItemCarrito(idx) { APP.ventaActual.splice(idx,1); renderCarrito(); }
@@ -854,7 +857,7 @@ document.getElementById('formVenta').addEventListener('submit', async function(e
   const datos = {
     idCliente, nombreCliente, productos:APP.ventaActual,
     totalVenta: parseFloat(document.getElementById('ventaTotalInput').value),
-    entregaInicial: parseFloat(document.getElementById('ventaEntrega').value)||0,
+    entregaInicial: obtenerValorNumerico(document.getElementById('ventaEntrega'))||0,
     cantidadCuotas: parseInt(document.getElementById('ventaCuotas').value)||0,
     diasPrimeraCuota: parseInt(document.getElementById('ventaDias').value)||30,
     garantiaMeses: parseInt(document.getElementById('ventaGarantia').value)||0,
@@ -1092,7 +1095,7 @@ function mostrarModalPago(idCuota, saldo, idVenta, numeroCuota, totalCuotas) {
       <label style="font-weight:600;display:block;margin-bottom:4px;font-size:14px;">CUOTA ${numeroCuota}/${totalCuotas}</label>
       <label style="font-weight:600;display:block;margin-bottom:8px;color:var(--danger);font-size:14px;">SALDO PENDIENTE: ${fmtGs(saldo)}</label>
       <label style="font-size:13px;color:var(--muted);display:block;margin-bottom:4px;">MONTO RECIBIDO</label>
-      <input type="text" id="montoPagoInput" oninput="formatearMiles(this)" value="${saldo}" step="1000" style="width:100%;padding:14px;border:2px solid var(--border);border-radius:12px;font-size:16px;box-sizing:border-box;">
+      <input type="text" id="montoPagoInput" oninput="formatearMiles(this)" value="${Math.ceil(saldo).toLocaleString('es-PY')}" style="width:100%;padding:14px;border:2px solid var(--border);border-radius:12px;font-size:16px;box-sizing:border-box;">
     </div>
     <div style="margin-bottom:16px;">
       <label style="font-size:13px;color:var(--muted);display:block;margin-bottom:4px;">FECHA DEL PAGO</label>
