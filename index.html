@@ -109,6 +109,7 @@ input[type="password"]{letter-spacing:4px;font-size:24px;text-align:center;}
   .btn-add{bottom:20px;right:20px;width:56px;height:56px;font-size:24px;}
 }
 </style>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
 <body>
 
@@ -157,6 +158,7 @@ input[type="password"]{letter-spacing:4px;font-size:24px;text-align:center;}
       <button class="menu-btn" onclick="showListadoVentas()"><div class="menu-icon">📋</div><div class="menu-label">Ventas</div></button>
       <button class="menu-btn" onclick="showCobranzas()"><div class="menu-icon">💰</div><div class="menu-label">Cobranzas</div></button>
       <button class="menu-btn" onclick="showVerificador()"><div class="menu-icon">🔍</div><div class="menu-label">Verificar Pago</div></button>
+      <button class="menu-btn" onclick="showInformes()"><div class="menu-icon">📈</div><div class="menu-label">Informes</div></button>
     </div>
   </div>
 </div>
@@ -463,5 +465,67 @@ input[type="password"]{letter-spacing:4px;font-size:24px;text-align:center;}
 </div>
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
 <script src="app.js"></script>
+
+<!-- INFORMES -->
+<div id="informesPage" class="hidden">
+  <div class="header">
+    <div class="header-inner">
+      <button class="btn-logout" onclick="showDashboard()">← Volver</button>
+      <h1>📈 INFORMES</h1>
+      <div style="width:80px;"></div>
+    </div>
+  </div>
+  <div class="container" style="padding-bottom:40px;">
+
+    <!-- TARJETAS RESUMEN -->
+    <div id="informesResumen" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:20px;">
+      <div class="stat-card" style="border-left:4px solid #3b82f6;"><div class="stat-label">Cartera Activa</div><div class="stat-value" id="iCartera" style="font-size:16px;">—</div></div>
+      <div class="stat-card" style="border-left:4px solid #ef4444;"><div class="stat-label">Total Vencido</div><div class="stat-value" id="iVencido" style="font-size:16px;">—</div></div>
+      <div class="stat-card" style="border-left:4px solid #f59e0b;"><div class="stat-label">% Mora</div><div class="stat-value" id="iMora" style="font-size:16px;">—</div></div>
+      <div class="stat-card" style="border-left:4px solid #10b981;"><div class="stat-label">Cobro Esperado Mes</div><div class="stat-value" id="iCobroMes" style="font-size:16px;">—</div></div>
+      <div class="stat-card" style="border-left:4px solid #8b5cf6;"><div class="stat-label">Margen Promedio</div><div class="stat-value" id="iMargen" style="font-size:16px;">—</div></div>
+    </div>
+
+    <!-- GRAFICOS -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;">
+      <div style="background:white;border-radius:16px;padding:20px;box-shadow:var(--shadow);">
+        <h3 style="font-size:13px;color:var(--muted);text-transform:uppercase;margin-bottom:16px;">Cobros últimos 6 meses</h3>
+        <canvas id="chartCobros" height="180"></canvas>
+      </div>
+      <div style="background:white;border-radius:16px;padding:20px;box-shadow:var(--shadow);">
+        <h3 style="font-size:13px;color:var(--muted);text-transform:uppercase;margin-bottom:16px;">Ventas últimos 6 meses</h3>
+        <canvas id="chartVentas" height="180"></canvas>
+      </div>
+    </div>
+
+    <!-- VENCIMIENTOS -->
+    <div style="background:white;border-radius:16px;padding:20px;box-shadow:var(--shadow);margin-bottom:16px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px;">
+        <h3 style="font-size:14px;color:var(--muted);text-transform:uppercase;margin:0;">Vencimientos</h3>
+        <div style="display:flex;gap:8px;">
+          <button onclick="mostrarVencimientos('hoy')" id="btnVHoy" class="btn" style="padding:8px 14px;font-size:12px;">Hoy</button>
+          <button onclick="mostrarVencimientos('manana')" id="btnVMan" class="btn btn-secondary" style="padding:8px 14px;font-size:12px;">Mañana</button>
+          <button onclick="mostrarVencimientos('semana')" id="btnVSem" class="btn btn-secondary" style="padding:8px 14px;font-size:12px;">7 días</button>
+          <button onclick="imprimirVencimientos()" class="btn btn-secondary" style="padding:8px 14px;font-size:12px;">🖨️ PDF</button>
+        </div>
+      </div>
+      <div id="tablaVencimientos"></div>
+    </div>
+
+    <!-- MORA ACTIVA -->
+    <div style="background:white;border-radius:16px;padding:20px;box-shadow:var(--shadow);margin-bottom:16px;">
+      <h3 style="font-size:14px;color:var(--muted);text-transform:uppercase;margin-bottom:14px;">Mora Activa</h3>
+      <div id="tablaMora"></div>
+    </div>
+
+    <!-- RENTABILIDAD -->
+    <div style="background:white;border-radius:16px;padding:20px;box-shadow:var(--shadow);">
+      <h3 style="font-size:14px;color:var(--muted);text-transform:uppercase;margin-bottom:14px;">Rentabilidad <span style="font-size:11px;font-weight:400;">(solo ventas con costo cargado)</span></h3>
+      <div id="tablaRentabilidad"></div>
+    </div>
+
+  </div>
+</div>
+
 </body>
 </html>
