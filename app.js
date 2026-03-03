@@ -131,7 +131,7 @@ async function imprimirTicketBluetooth(datos) {
   const items = [];
   const add = (content, bold=0, align=0, format=0) => items.push({type:0,content,bold,align,format});
   const addCenter = (content, bold=0, format=0) => add(content, bold, 1, format);
-  const addBarcode = (value) => items.push({type:2, value:String(value).replace(/[^A-Z0-9]/g,''), width:250, height:70, align:1});
+  const addBarcode = (value) => items.push({type:2, value:String(value).replace(/[^A-Z0-9\-]/g,''), width:250, height:70, align:1});
   const sp = () => add(' ');
   
   // Función helper para fecha con hora y segundos
