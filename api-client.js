@@ -74,6 +74,10 @@ async function registrarPagoAPI(d) {
 async function getPagosVentaAPI(idVenta) {
   try { const r = await jsonp(API_URL, {action:'getPagosVenta', data:b64({idVenta})}); return r.success ? r.data||[] : []; } catch(e) { return []; }
 }
+
+async function getInformesAPI() {
+  try { const r = await jsonp(API_URL, {action:'getInformes'}); return r.success ? r.data : null; } catch(e) { return null; }
+}
 async function anularVentaAPI(d) {
   try { return await jsonp(API_URL, {action:'anularVenta', data:b64(d)}); } catch(e) { return {success:false,error:e.message}; }
 }
