@@ -94,6 +94,7 @@ function handleApiRequest_(action, data, callback) {
       case 'anularPago':            response = anularPago(data); break;
       case 'getEstadisticas':       response = { success: true, data: getEstadisticas() }; break;
       case 'guardarTicket':         response = { success: guardarTicketTemp(data.ticketId, data.jsonData) }; break;
+      case 'verificarCodigo':        response = verificarCodigo(data.codigo); break;
       default: response = { success: false, error: 'Unknown action: ' + action };
     }
     return createJsonResponse_(response, callback);
@@ -119,12 +120,19 @@ function getUsuarios() {
   try {
     const sheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName('USUARIOS');
     const data = sheet.getDataRange().getValues();
+    const numCols = data[0] ? data[0].length : 0;
     const usuarios = [];
     for (let i = 1; i < data.length; i++) {
-      if (data[i][4] === true) usuarios.push({ nombre: data[i][1], rol: data[i][3] });
+      if (!data[i][1]) continue;
+      const activo = numCols < 5 ? true : data[i][4];
+      const activoOk = activo === true
+        || String(activo).toUpperCase() === 'TRUE'
+        || String(activo).toUpperCase() === 'SI'
+        || activo === 1 || activo === '1';
+      if (activoOk) usuarios.push({ nombre: data[i][1], rol: data[i][3] || 'VENDEDOR' });
     }
     return usuarios;
-  } catch (e) { return []; }
+  } catch (e) { Logger.log('getUsuarios error: ' + e); return []; }
 }
 
 function validarUsuario(data) {
@@ -132,9 +140,18 @@ function validarUsuario(data) {
     if (!data || !data.nombre || !data.pin) return { success: false, error: 'DATOS INCOMPLETOS' };
     const sheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName('USUARIOS');
     const rows = sheet.getDataRange().getValues();
+    const numCols = rows[0] ? rows[0].length : 0;
     for (let i = 1; i < rows.length; i++) {
-      if (rows[i][1] === data.nombre && String(rows[i][2]) === String(data.pin) && rows[i][4] === true) {
-        return { success: true, data: { id: rows[i][0], nombre: rows[i][1], rol: rows[i][3] } };
+      if (!rows[i][1]) continue;
+      const activo = numCols < 5 ? true : rows[i][4];
+      const activoOk = activo === true
+        || String(activo).toUpperCase() === 'TRUE'
+        || String(activo).toUpperCase() === 'SI'
+        || activo === 1 || activo === '1';
+      if (!activoOk) continue;
+      if (String(rows[i][1]).toUpperCase() === String(data.nombre).toUpperCase()
+          && String(rows[i][2]) === String(data.pin)) {
+        return { success: true, data: { id: rows[i][0] || 'USR-' + i, nombre: rows[i][1], rol: rows[i][3] || 'VENDEDOR' } };
       }
     }
     return { success: false, error: 'USUARIO O PIN INCORRECTOS' };
@@ -498,6 +515,11 @@ function registrarPago(data) {
     let montoRestante = Math.ceil(parseFloat(data.montoPago));
     const pagosGenerados = []; // {codigoVerif, numeroCuota, totalCuotas, montoPagado, ticketId}
 
+    // ID de grupo generado ANTES del loop: se graba en col[18] de cada fila de PAGOS
+    const tsG0 = Date.now().toString(36).toUpperCase();
+    const rnG0 = Math.random().toString(36).substring(2, 7).toUpperCase();
+    const ticketIdGrupo = 'TKT-G-' + tsG0 + '-' + rnG0;
+
     // --- Procesar cuotas una a una ---
     for (let idx = 0; idx < cuotasPendientes.length && montoRestante > 0; idx++) {
       const cuota     = cuotasPendientes[idx];
@@ -551,13 +573,14 @@ function registrarPago(data) {
       });
       guardarTicketPermanente_(ss, ticketId, JSON.stringify(ticketItems));
 
-      // Guardar fila en PAGOS (18 columnas)
+      // Guardar fila en PAGOS (19 columnas)
+      // col[17]=ticketId individual, col[18]=ticketIdGrupo (igual para todas las cuotas del cobro)
       sheetPagos.appendRow([
         idPago, codigoVerif, fechaPago,
         data.idCliente, nombreCliente, idVenta, productoDesc,
         row[0], row[2], row[3],
         montoAplicar, saldoVentaTemp, proximaFecha,
-        false, '', cobrador, 'ACTIVO', ticketId
+        false, '', cobrador, 'ACTIVO', ticketId, ticketIdGrupo
       ]);
 
       pagosGenerados.push({
@@ -598,11 +621,9 @@ function registrarPago(data) {
       .sort((a, b) => new Date(a[5]) - new Date(b[5]));
     if (proxFinal.length > 0) proximaFechaFinal = proxFinal[0][5];
 
-    // Construir UN ticket unificado para imprimir todo el grupo de pagos
-    const tsGrupo    = Date.now().toString(36).toUpperCase();
-    const rndGrupo   = Math.random().toString(36).substring(2, 7).toUpperCase();
-    const ticketIdGrupo = 'TKT-G-' + tsGrupo + '-' + rndGrupo;
-    const ticketGrupo   = construirTicketPagoGrupo_({
+    // Construir ticket unificado con ticketIdGrupo ya generado antes del loop
+    // Ese ID ya esta guardado en col[18] de todas las filas de PAGOS de este cobro
+    const ticketGrupo = construirTicketPagoGrupo_({
       pagosGenerados, saldoRestante: saldoVentaFinal,
       proximaFecha: proximaFechaFinal, productoDesc,
       clienteDoc, nombreCliente, numeroPedido: idVenta,
@@ -710,21 +731,54 @@ function getPagosVenta(idVenta) {
   try {
     const sheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName('PAGOS');
     const data = sheet.getDataRange().getValues();
-    const pagos = [];
+
+    // Agrupar por Ticket_ID_Grupo (col[18])
+    // Pagos viejos sin col[18] se tratan como transaccion individual
+    const grupos = {};
+    const orden  = [];
+
     for (let i = 1; i < data.length; i++) {
-      if (data[i][5] === idVenta && String(data[i][16]).toUpperCase() !== 'ANULADO') {
-        pagos.push({
-          ID_Pago: data[i][0], Codigo_Verificacion: data[i][1],
-          Fecha_Pago: data[i][2], ID_Cliente: data[i][3], Nombre_Cliente: data[i][4],
-          ID_Venta: data[i][5], Producto: data[i][6], ID_Cuota: data[i][7],
-          Numero_Cuota: data[i][8], Total_Cuotas: data[i][9],
-          Monto_Pagado: Math.ceil(data[i][10]), Saldo_Restante: Math.ceil(data[i][11]),
-          Proxima_Fecha: data[i][12], Cobrador: data[i][15], Estado: data[i][16],
-          Ticket_ID: data[i][17] || ''
-        });
+      if (data[i][5] !== idVenta) continue;
+      if (String(data[i][16]).toUpperCase() === 'ANULADO') continue;
+
+      const tGrupo = data[i][18] || data[i][0]; // col[18] o fallback a ID_Pago
+      const tInd   = data[i][17] || '';         // col[17] ticket individual
+
+      if (!grupos[tGrupo]) {
+        grupos[tGrupo] = {
+          Ticket_ID_Grupo: tGrupo,
+          Fecha_Pago:      data[i][2],
+          ID_Cliente:      data[i][3],
+          Nombre_Cliente:  data[i][4],
+          ID_Venta:        data[i][5],
+          Producto:        data[i][6],
+          Cobrador:        data[i][15],
+          Total_Cuotas:    data[i][9],
+          Saldo_Restante:  Math.ceil(data[i][11]),
+          Proxima_Fecha:   data[i][12],
+          Monto_Total:     0,
+          IDs_Pago:        [],
+          Cuotas:          []
+        };
+        orden.push(tGrupo);
+      }
+
+      const g = grupos[tGrupo];
+      g.Monto_Total += Math.ceil(data[i][10]);
+      g.IDs_Pago.push(data[i][0]);
+      g.Cuotas.push({
+        ID_Pago:             data[i][0],
+        Codigo_Verificacion: data[i][1],
+        Numero_Cuota:        data[i][8],
+        Monto_Pagado:        Math.ceil(data[i][10])
+      });
+      // El saldo mas bajo es el del ultimo pago procesado
+      if (Math.ceil(data[i][11]) < g.Saldo_Restante) {
+        g.Saldo_Restante = Math.ceil(data[i][11]);
       }
     }
-    return pagos;
+
+    return orden.map(id => grupos[id]);
   } catch(e) { return []; }
 }
 
@@ -765,40 +819,112 @@ function anularVenta(data) {
 
 function anularPago(data) {
   try {
-    if (!data || !data.idPago || !data.motivo) return { success: false, error: 'DATOS INCOMPLETOS' };
+    if (!data || (!data.idPago && !data.idGrupo) || !data.motivo) {
+      return { success: false, error: 'DATOS INCOMPLETOS' };
+    }
     const ss = SpreadsheetApp.openById(SHEET_ID);
-    const sheetPagos = ss.getSheetByName('PAGOS');
-    const sheetCuotas = ss.getSheetByName('CUOTAS');
+    const sheetPagos       = ss.getSheetByName('PAGOS');
+    const sheetCuotas      = ss.getSheetByName('CUOTAS');
     const sheetAnulaciones = ss.getSheetByName('ANULACIONES');
     const pagosData = sheetPagos.getDataRange().getValues();
-    let filaPago = -1, pagoActual = null;
-    for (let i = 1; i < pagosData.length; i++) {
-      if (pagosData[i][0] === data.idPago) { filaPago = i + 1; pagoActual = pagosData[i]; break; }
-    }
-    if (filaPago === -1) return { success: false, error: 'PAGO NO ENCONTRADO' };
-    sheetPagos.getRange(filaPago, 17).setValue('ANULADO');
-    if (pagoActual[7] !== 'ENTREGA') {
-      const cuotasData = sheetCuotas.getDataRange().getValues();
-      for (let i = 1; i < cuotasData.length; i++) {
-        if (cuotasData[i][0] === pagoActual[7]) {
-          const montoPagAnt = Math.ceil(parseFloat(cuotasData[i][6]) - parseFloat(pagoActual[10]));
-          const nuevoSaldo = Math.ceil(parseFloat(cuotasData[i][4]));
-          sheetCuotas.getRange(i + 1, 7).setValue(Math.max(0, montoPagAnt));
-          sheetCuotas.getRange(i + 1, 8).setValue(nuevoSaldo);
-          sheetCuotas.getRange(i + 1, 9).setValue('PENDIENTE');
+
+    // Identificar grupo
+    let idGrupo = data.idGrupo || null;
+    if (!idGrupo && data.idPago) {
+      for (let i = 1; i < pagosData.length; i++) {
+        if (pagosData[i][0] === data.idPago) {
+          idGrupo = pagosData[i][18] || data.idPago;
           break;
         }
       }
     }
-    const codigoAnul = 'ANUL-' + Date.now().toString(36).toUpperCase();
-    if (sheetAnulaciones) {
-      sheetAnulaciones.appendRow([
-        codigoAnul, new Date(), 'PAGO', data.idPago,
-        String(data.motivo).toUpperCase(), String(data.usuario||'').toUpperCase(),
-        pagoActual[1], String(data.observacion||'').toUpperCase()
-      ]);
+
+    // Recopilar filas activas del grupo
+    const filasGrupo = [];
+    for (let i = 1; i < pagosData.length; i++) {
+      if (String(pagosData[i][16]).toUpperCase() === 'ANULADO') continue;
+      if (pagosData[i][18] === idGrupo || pagosData[i][0] === idGrupo) {
+        filasGrupo.push({ fila: i + 1, row: pagosData[i] });
+      }
     }
-    return { success: true, codigoAnulacion: codigoAnul };
+    if (filasGrupo.length === 0) return { success: false, error: 'PAGO NO ENCONTRADO' };
+
+    const codigoAnul = 'ANUL-' + Date.now().toString(36).toUpperCase();
+
+    for (const item of filasGrupo) {
+      const p = item.row;
+      // Marcar pago como ANULADO
+      sheetPagos.getRange(item.fila, 17).setValue('ANULADO');
+
+      if (p[7] !== 'ENTREGA') {
+        // Re-leer cuotas FRESCOS en cada iteracion para evitar valores stale
+        const cuotasActual = sheetCuotas.getDataRange().getValues();
+        for (let i = 1; i < cuotasActual.length; i++) {
+          if (cuotasActual[i][0] === p[7]) {
+            // p[10] = montoAplicado de ESTE pago
+            // cuotasActual[i][6] = monto_pagado acumulado actual en la cuota
+            // cuotasActual[i][4] = monto_original de la cuota
+            const montoCuotaOriginal = Math.ceil(parseFloat(cuotasActual[i][4]));
+            const montoPagadoActual  = Math.ceil(parseFloat(cuotasActual[i][6]));
+            const montoEsteGrupo     = Math.ceil(parseFloat(p[10]));
+
+            // Restar solo lo que aportó este cobro
+            const nuevoMontoPagado = Math.max(0, montoPagadoActual - montoEsteGrupo);
+            // Saldo = original - lo que queda pagado
+            const nuevoSaldo = Math.max(0, montoCuotaOriginal - nuevoMontoPagado);
+            // Estado correcto
+            let nuevoEstado;
+            if (nuevoMontoPagado <= 0) {
+              nuevoEstado = 'PENDIENTE';
+            } else if (nuevoSaldo <= 0) {
+              nuevoEstado = 'PAGADA';
+            } else {
+              nuevoEstado = 'PARCIAL';
+            }
+
+            sheetCuotas.getRange(i + 1, 7).setValue(nuevoMontoPagado);
+            sheetCuotas.getRange(i + 1, 8).setValue(nuevoSaldo);
+            sheetCuotas.getRange(i + 1, 9).setValue(nuevoEstado);
+            break;
+          }
+        }
+      }
+
+      if (sheetAnulaciones) {
+        sheetAnulaciones.appendRow([
+          codigoAnul, new Date(), 'PAGO', p[0],
+          String(data.motivo).toUpperCase(), String(data.usuario||'').toUpperCase(),
+          p[1], String(data.observacion||'').toUpperCase()
+        ]);
+      }
+    }
+
+    // Recalcular saldo total de la venta despues de anular
+    const idVentaRef = filasGrupo[0].row[5];
+    const cuotasPost = sheetCuotas.getDataRange().getValues();
+    let saldoVentaPost = 0;
+    for (let i = 1; i < cuotasPost.length; i++) {
+      if (cuotasPost[i][1] === idVentaRef) {
+        const est = String(cuotasPost[i][8]).toUpperCase();
+        if (est === 'PENDIENTE' || est === 'PARCIAL') {
+          saldoVentaPost += Math.ceil(parseFloat(cuotasPost[i][7]) || 0);
+        }
+      }
+    }
+    const sheetVentas = ss.getSheetByName('VENTAS');
+    const ventasData  = sheetVentas.getDataRange().getValues();
+    for (let i = 1; i < ventasData.length; i++) {
+      if (ventasData[i][0] === idVentaRef) {
+        sheetVentas.getRange(i + 1, 16).setValue(saldoVentaPost);
+        // Si habia quedado COMPLETADA y ahora tiene saldo, revertir estado
+        if (saldoVentaPost > 0 && String(ventasData[i][14]).toUpperCase() === 'COMPLETADA') {
+          sheetVentas.getRange(i + 1, 15).setValue('ACTIVA');
+        }
+        break;
+      }
+    }
+
+    return { success: true, codigoAnulacion: codigoAnul, pagosAnulados: filasGrupo.length };
   } catch(e) { Logger.log('Error anularPago: ' + e); return { success: false, error: e.toString() }; }
 }
 
@@ -895,4 +1021,35 @@ function getEstadisticas() {
       totalVentasMes:0, creditosActivos:0, totalCreditosActivos:0
     };
   }
+}
+
+function verificarCodigo(codigo) {
+  try {
+    if (!codigo) return { success: false, valido: false, error: 'CODIGO VACIO' };
+    // Normalizar: mayusculas, sin espacios
+    // También generar versión sin guiones para cuando el lector los omite
+    const cod        = String(codigo).toUpperCase().trim();
+    const codSinGu   = cod.replace(/-/g, '');  // PAGMMAIUDR6OJMV7
+    
+    const ss = SpreadsheetApp.openById(SHEET_ID);
+    const pagosData = ss.getSheetByName('PAGOS').getDataRange().getValues();
+    for (let i = 1; i < pagosData.length; i++) {
+      const codHoja    = String(pagosData[i][1]||'').toUpperCase().trim();
+      const codHojaSin = codHoja.replace(/-/g, '');
+      // Match exacto O comparando sin guiones (lector que omite guiones)
+      if (codHoja === cod || codHojaSin === codSinGu) {
+        const estado = String(pagosData[i][16]||'').toUpperCase();
+        return {
+          success: true, valido: estado !== 'ANULADO', anulado: estado === 'ANULADO',
+          codigo: codHoja,  // devolver el código tal como está en la hoja
+          fechaPago: pagosData[i][2], cliente: pagosData[i][4],
+          idVenta: pagosData[i][5], producto: pagosData[i][6],
+          numeroCuota: pagosData[i][8], totalCuotas: pagosData[i][9],
+          montoPagado: Math.ceil(pagosData[i][10]), saldoRestante: Math.ceil(pagosData[i][11]),
+          cobrador: pagosData[i][15], estado: estado
+        };
+      }
+    }
+    return { success: true, valido: false, error: 'CODIGO NO ENCONTRADO' };
+  } catch(e) { return { success: false, valido: false, error: e.toString() }; }
 }
