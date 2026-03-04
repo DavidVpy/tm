@@ -84,7 +84,7 @@ function mostrarConfirmacion(msg) {
 // HELPERS
 // ============================================
 function hideAll() {
-  ['loginPage','dashboardPage','clientesPage','formClientePage','detalleClientePage','ventasPage','listadoVentasPage','cobranzasPage','verificadorPage','informesPage'].forEach(id=>{
+  ['loginPage','dashboardPage','clientesPage','formClientePage','detalleClientePage','ventasPage','listadoVentasPage','cobranzasPage','verificadorPage','informesPage','detalleVentaPage'].forEach(id=>{
     const el=document.getElementById(id); if(el) el.classList.add('hidden');
   });
 }
@@ -371,27 +371,31 @@ async function verDetalleCliente(id) {
   const c = APP.clienteActual;
   hideAll();
   document.getElementById('detalleClientePage').classList.remove('hidden');
-  document.getElementById('detalleNombre').textContent = c.Nombres + ' ' + c.Apellidos;
-  document.getElementById('detalleCiRuc').textContent = 'CI/RUC: ' + c.CI_RUC + (c.Alias ? '  •  "'+c.Alias+'"' : '');
+  const nombreCompleto = (c.Nombres + ' ' + c.Apellidos).trim();
+  document.getElementById('detalleNombre').textContent = nombreCompleto;
+  const bodyNombre = document.getElementById('detalleNombreBody');
+  if (bodyNombre) bodyNombre.textContent = nombreCompleto;
+  const iniciales = document.getElementById('detalleIniciales');
+  if (iniciales) iniciales.textContent = ((c.Nombres||'?')[0]).toUpperCase();
+  document.getElementById('detalleCiRuc').textContent = 'CI/RUC: ' + c.CI_RUC + (c.Alias ? '  \u2022  "'+c.Alias+'"' : '');
   const telEl = document.getElementById('detalleTelefono');
-  if (c.Telefono) telEl.innerHTML = `<a href="tel:${c.Telefono}" style="color:var(--accent);text-decoration:none;">📱 ${c.Telefono}</a>`;
-  else telEl.textContent = 'SIN TELÉFONO';
+  if (c.Telefono) telEl.innerHTML = `<a href="tel:${c.Telefono}" style="color:var(--accent);text-decoration:none;font-weight:600;">\ud83d\udcf1 ${c.Telefono}</a>`;
+  else telEl.textContent = '\u2014';
   const waEl = document.getElementById('detalleWhatsapp');
   const waNum = formatTelWA(c.Tel_WhatsApp||c.Telefono);
   if (waNum) { waEl.href = 'https://wa.me/'+waNum; waEl.style.display='flex'; } else waEl.style.display='none';
   const dirEl = document.getElementById('detalleDireccion');
   if (c.GPS_Lat && c.GPS_Lng && String(c.GPS_Lat).length > 3) {
-    dirEl.innerHTML = `<a href="https://www.google.com/maps?q=${c.GPS_Lat},${c.GPS_Lng}" target="_blank" style="color:var(--accent);text-decoration:none;">📍 ${c.Direccion||'VER EN MAPA'}</a>`;
+    dirEl.innerHTML = `<a href="https://www.google.com/maps?q=${c.GPS_Lat},${c.GPS_Lng}" target="_blank" style="color:var(--accent);text-decoration:none;font-weight:600;">\ud83d\udccd ${c.Direccion||'Ver en mapa'}</a>`;
   } else if (c.Direccion) {
     const q = encodeURIComponent((c.Direccion||'')+' '+(c.Ciudad||'')+' Paraguay');
-    dirEl.innerHTML = `<a href="https://www.google.com/maps/search/${q}" target="_blank" style="color:var(--accent);text-decoration:none;">📍 ${c.Direccion}</a>`;
-  } else dirEl.textContent = 'SIN DIRECCIÓN';
-  document.getElementById('detalleCiudad').textContent = [c.Ciudad, c.Barrio].filter(Boolean).join(' - ') || 'NO REGISTRADA';
-  document.getElementById('ventasCliente').innerHTML = '<div class="loading">CARGANDO COMPRAS...</div>';
+    dirEl.innerHTML = `<a href="https://www.google.com/maps/search/${q}" target="_blank" style="color:var(--accent);text-decoration:none;font-weight:600;">\ud83d\udccd ${c.Direccion}</a>`;
+  } else dirEl.textContent = '\u2014';
+  document.getElementById('detalleCiudad').textContent = [c.Ciudad, c.Barrio].filter(Boolean).join(' \u2014 ') || '\u2014';
+  document.getElementById('ventasCliente').innerHTML = '<div class="loading">CARGANDO...</div>';
   const ventas = await getVentasClienteAPI(id);
   renderVentasCliente(ventas);
 }
-
 function renderVentasCliente(ventas) {
   if (!ventas.length) { document.getElementById('ventasCliente').innerHTML='<div class="empty">SIN COMPRAS</div>'; return; }
   let html = '';
@@ -417,97 +421,77 @@ function renderVentasCliente(ventas) {
 }
 
 async function verDetalleVenta(idVenta) {
-  const ventas = await getVentasClienteAPI(APP.clienteActual.ID_Cliente);
-  const venta = ventas.find(v => v.ID_Venta === idVenta);
+  const ventas  = await getVentasClienteAPI(APP.clienteActual.ID_Cliente);
+  const venta   = ventas.find(v => v.ID_Venta === idVenta);
   if (!venta) return;
   const detalles = await getDetalleVentaAPI(idVenta);
-  const cuotas = await getCuotasVentaAPI(idVenta);
-  const pagos = await getPagosVentaAPI(idVenta);
+  const cuotas   = await getCuotasVentaAPI(idVenta);
+  const pagos    = await getPagosVentaAPI(idVenta);
 
-  const productosHtml = detalles.map(d => `
-    <div style="padding:10px 0;border-bottom:1px solid var(--border);">
-      <div style="font-weight:600;">${d.Descripcion}</div>
-      <div style="color:var(--muted);font-size:13px;">${d.Cantidad} X ${fmtGs(d.Precio_Unitario)} = ${fmtGs(d.Subtotal)}</div>
-    </div>`).join('');
+  APP.detalleVentaId = idVenta;
+  hideAll();
+  document.getElementById('detalleVentaPage').classList.remove('hidden');
+  document.getElementById('detalleVentaVolver').onclick = () => verDetalleCliente(APP.clienteActual.ID_Cliente);
+  document.getElementById('detalleVentaPedido').textContent = venta.Numero_Pedido + ' — ' + fmtFecha(venta.Fecha_Venta);
 
-  const cuotasHtml = cuotas.map(cu => {
-    const bc = cu.Estado==='PAGADA'?'badge-ok':cu.Estado==='PARCIAL'?'badge-warning':'badge-danger';
-    const label = cu.Estado==='PAGADA'?'PAGADA':cu.Estado==='PARCIAL'?'PAGO PARCIAL':'PENDIENTE';
-    return `<div style="padding:8px 0;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
+  // Productos
+  document.getElementById('dvProductos').innerHTML = detalles.length ? detalles.map(d => `
+    <div style="padding:10px 0;border-bottom:1px solid var(--border);last-child{border:none}">
+      <div style="font-weight:700;font-size:14px;">${d.Descripcion}</div>
+      <div style="color:var(--muted);font-size:12px;margin-top:3px;">${d.Cantidad} x ${fmtGs(d.Precio_Unitario)} = ${fmtGs(d.Subtotal)}</div>
+    </div>`).join('') : '<div class="empty">Sin productos</div>';
+
+  // Financiero
+  document.getElementById('dvTotalVenta').textContent     = fmtGs(venta.Total_Venta);
+  document.getElementById('dvSaldoFinanciar').textContent = fmtGs(venta.Saldo_Financiar);
+  document.getElementById('dvGarantia').textContent       = (venta.Garantia_Meses||0) + ' meses';
+  const entRow = document.getElementById('dvEntregaRow');
+  if (parseFloat(venta.Entrega_Inicial) > 0) {
+    document.getElementById('dvEntrega').textContent = fmtGs(venta.Entrega_Inicial);
+    entRow.style.display = 'flex';
+  } else { entRow.style.display = 'none'; }
+  const saldoEl = document.getElementById('dvSaldoActual');
+  saldoEl.textContent = fmtGs(venta.Saldo_Actual);
+  saldoEl.style.color = venta.Saldo_Actual > 0 ? 'var(--danger)' : 'var(--success)';
+
+  // Cuotas
+  document.getElementById('dvCuotas').innerHTML = cuotas.length ? cuotas.map(cu => {
+    const bc    = cu.Estado==='PAGADA'?'badge-ok':cu.Estado==='PARCIAL'?'badge-warning':'badge-danger';
+    const label = cu.Estado==='PAGADA'?'Pagada':cu.Estado==='PARCIAL'?'Parcial':'Pendiente';
+    return `<div style="background:var(--surface);border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:8px;border:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
       <div>
-        <div style="font-size:13px;font-weight:600;">CUOTA ${cu.Numero_Cuota}/${cu.Total_Cuotas}</div>
-        <div style="font-size:12px;color:var(--muted);">VENCE: ${fmtFecha(cu.Fecha_Vencimiento)}</div>
-        ${parseFloat(cu.Monto_Pagado)>0?'<div style="font-size:12px;color:var(--success);">PAGADO: '+fmtGs(cu.Monto_Pagado)+'</div>':''}
+        <div style="font-size:13px;font-weight:700;">Cuota ${cu.Numero_Cuota}/${cu.Total_Cuotas}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px;">Vence ${fmtFecha(cu.Fecha_Vencimiento)}</div>
+        ${parseFloat(cu.Monto_Pagado)>0?`<div style="font-size:11px;color:var(--success);font-weight:600;">Pagado: ${fmtGs(cu.Monto_Pagado)}</div>`:''}
       </div>
       <div style="text-align:right;">
-        <div style="font-weight:700;">${fmtGs(cu.Saldo_Cuota>0?cu.Saldo_Cuota:cu.Monto_Cuota)}</div>
+        <div style="font-weight:800;font-size:14px;">${fmtGs(cu.Saldo_Cuota>0?cu.Saldo_Cuota:cu.Monto_Cuota)}</div>
         <span class="badge ${bc}">${label}</span>
       </div>
     </div>`;
-  }).join('');
+  }).join('') : '<div class="empty">Sin cuotas</div>';
 
-  // Historial: UNA entrada por transaccion (el backend ya agrupa por Ticket_ID_Grupo)
-  const pagosHtml = pagos.length ? pagos.map(trx => {
-    const cuotas   = (trx.Cuotas && trx.Cuotas.length > 0) ? trx.Cuotas : [];
-    const nCuotas  = cuotas.length;
+  // Pagos
+  document.getElementById('dvPagos').innerHTML = pagos.length ? pagos.map(trx => {
+    const cs = (trx.Cuotas && trx.Cuotas.length > 0) ? trx.Cuotas : [];
     const totalStr = String(trx.Total_Cuotas || '?').padStart(2,'0');
-    let cuotasDesc;
-    if (nCuotas === 0)      cuotasDesc = 'PAGO';
-    else if (nCuotas === 1) cuotasDesc = 'CUOTA '  + String(cuotas[0].Numero_Cuota).padStart(2,'0') + '/' + totalStr;
-    else                    cuotasDesc = 'CUOTAS ' + cuotas.map(c => String(c.Numero_Cuota).padStart(2,'0')).join(', ') + '/' + totalStr;
-    const codigosDesc  = cuotas.map(c => c.Codigo_Verificacion).join(' · ');
-    const primerCodigo = nCuotas > 0 ? cuotas[0].Codigo_Verificacion : '';
-    const tIdGrupo     = trx.Ticket_ID_Grupo || '';
-    const montoTotal   = trx.Monto_Total || 0;
-    return `
-    <div style="padding:10px 0;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
-      <div style="flex:1;min-width:0;">
-        <div style="font-size:13px;font-weight:700;">${cuotasDesc} &nbsp;·&nbsp; ${fmtFecha(trx.Fecha_Pago)}</div>
-        <div style="font-size:11px;color:var(--muted);word-break:break-all;">${codigosDesc}</div>
-        <div style="font-size:13px;color:var(--success);font-weight:600;">COBRADO: ${fmtGs(montoTotal)}</div>
+    let cuotasDesc = cs.length===0?'Pago':cs.length===1
+      ?'Cuota '+String(cs[0].Numero_Cuota).padStart(2,'0')+'/'+totalStr
+      :'Cuotas '+cs.map(c=>String(c.Numero_Cuota).padStart(2,'0')).join(', ')+'/'+totalStr;
+    const primerCodigo = cs.length>0?cs[0].Codigo_Verificacion:'';
+    const tIdGrupo     = trx.Ticket_ID_Grupo||'';
+    return `<div class="info-row">
+      <div>
+        <div style="font-size:13px;font-weight:700;">${cuotasDesc}</div>
+        <div style="font-size:11px;color:var(--muted);">${fmtFecha(trx.Fecha_Pago)}</div>
+        <div style="font-size:12px;color:var(--success);font-weight:600;">${fmtGs(trx.Monto_Total||0)}</div>
       </div>
-      <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end;margin-left:8px;">
-        <button onclick="reimprimirPagoGrupo('${tIdGrupo}')" style="background:var(--bg);border:1px solid var(--border);padding:6px 10px;border-radius:8px;cursor:pointer;font-size:14px;">🖨️</button>
-        <button onclick="mostrarAnularPago('${tIdGrupo}','${primerCodigo}')" style="background:#fee2e2;border:none;padding:6px 10px;border-radius:8px;cursor:pointer;font-size:14px;color:#991b1b;">✕</button>
+      <div style="display:flex;gap:6px;align-items:center;">
+        <button onclick="reimprimirPagoGrupo('${tIdGrupo}')" style="background:var(--bg);border:1px solid var(--border);padding:7px 10px;border-radius:8px;cursor:pointer;font-size:13px;">print</button>
+        <button onclick="mostrarAnularPago('${tIdGrupo}','${primerCodigo}')" style="background:#fee2e2;border:none;padding:7px 10px;border-radius:8px;cursor:pointer;font-size:13px;color:#991b1b;">X</button>
       </div>
     </div>`;
-  }).join('') : '<div style="color:var(--muted);font-size:13px;padding:8px 0;">SIN PAGOS REGISTRADOS</div>';
-
-  const modal = document.createElement('div');
-  modal.id = 'modalDetalleVenta';
-  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:5000;display:flex;align-items:flex-end;justify-content:center;';
-  modal.innerHTML = `<div style="background:white;border-radius:24px 24px 0 0;padding:24px;width:100%;max-width:600px;max-height:88vh;overflow-y:auto;">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
-      <div>
-        <div style="font-size:18px;font-weight:800;">${venta.Numero_Pedido}</div>
-        <div style="font-size:12px;color:var(--muted);">${fmtFecha(venta.Fecha_Venta)}</div>
-      </div>
-      <button onclick="document.getElementById('modalDetalleVenta').remove()" style="background:var(--bg);border:none;padding:8px 14px;border-radius:10px;cursor:pointer;font-size:18px;">✕</button>
-    </div>
-    <h4 style="margin-bottom:8px;color:var(--muted);font-size:12px;text-transform:uppercase;">Productos</h4>
-    ${productosHtml||'<div class="empty">SIN PRODUCTOS</div>'}
-    <div style="margin:14px 0;padding:14px;background:var(--bg);border-radius:12px;font-size:14px;">
-      <div style="display:flex;justify-content:space-between;margin-bottom:5px;"><span>TOTAL VENTA:</span><strong>${fmtGs(venta.Total_Venta)}</strong></div>
-      ${parseFloat(venta.Entrega_Inicial)>0?'<div style="display:flex;justify-content:space-between;margin-bottom:5px;"><span>ENTREGA INICIAL:</span><strong style="color:var(--success);">'+fmtGs(venta.Entrega_Inicial)+'</strong></div>':''}
-      <div style="display:flex;justify-content:space-between;margin-bottom:5px;"><span>SALDO FINANCIADO:</span><strong>${fmtGs(venta.Saldo_Financiar)}</strong></div>
-      <div style="display:flex;justify-content:space-between;margin-bottom:5px;"><span>GARANTÍA:</span><strong>${venta.Garantia_Meses||0} MESES</strong></div>
-      <div style="display:flex;justify-content:space-between;border-top:2px solid var(--border);padding-top:8px;margin-top:6px;">
-        <span style="font-weight:700;">SALDO ACTUAL:</span>
-        <strong style="color:${venta.Saldo_Actual>0?'var(--danger)':'var(--success)'};">${fmtGs(venta.Saldo_Actual)}</strong>
-      </div>
-    </div>
-    ${cuotas.length?'<h4 style="margin-bottom:8px;color:var(--muted);font-size:12px;text-transform:uppercase;">Cuotas</h4>'+cuotasHtml:''}
-    <h4 style="margin:14px 0 8px;color:var(--muted);font-size:12px;text-transform:uppercase;">Historial de Pagos</h4>
-    ${pagosHtml}
-    <div style="display:flex;gap:8px;margin-top:18px;flex-wrap:wrap;">
-      <button onclick="reimprimirComprobante('${idVenta}')" class="btn btn-secondary" style="flex:1;min-width:130px;font-size:13px;">🖨️ COMP. VENTA</button>
-      <button onclick="imprimirEstadoCuenta('${idVenta}')" class="btn btn-secondary" style="flex:1;min-width:130px;font-size:13px;">📋 ESTADO CTA</button>
-      <button onclick="mostrarAnularVenta('${idVenta}')" class="btn" style="flex:1;min-width:130px;font-size:13px;background:#ef4444;">🚫 ANULAR VENTA</button>
-    </div>
-    <button onclick="document.getElementById('modalDetalleVenta').remove()" class="btn btn-secondary" style="width:100%;margin-top:8px;">CERRAR</button>
-  </div>`;
-  modal.addEventListener('click', e=>{ if(e.target===modal) modal.remove(); });
-  document.body.appendChild(modal);
+  }).join('') : '<div style="padding:14px 0;color:var(--muted);font-size:13px;">Sin pagos registrados</div>';
 }
 
 // ============================================
@@ -619,7 +603,7 @@ async function confirmarAnularVenta(idVenta) {
   hideLoader();
   if (result.success) {
     mostrarConfirmacion('VENTA ANULADA');
-    setTimeout(()=>{ document.getElementById('modalDetalleVenta')?.remove(); verDetalleCliente(APP.clienteActual.ID_Cliente); },1900);
+    setTimeout(()=>{ verDetalleCliente(APP.clienteActual.ID_Cliente); },1900);
   } else toast(result.error||'ERROR AL ANULAR','error',4000);
 }
 
@@ -657,7 +641,7 @@ async function confirmarAnularPago(idGrupo) {
     const cant = result.pagosAnulados || 1;
     mostrarConfirmacion(cant > 1 ? cant + ' PAGOS ANULADOS' : 'PAGO ANULADO');
     setTimeout(()=>{ 
-      const mv = document.getElementById('modalDetalleVenta'); 
+      const mv = null; 
       if(mv) mv.remove();
       if(APP.clienteActual) verDetalleCliente(APP.clienteActual.ID_Cliente);
     },1900);
