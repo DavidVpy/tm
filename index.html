@@ -8,11 +8,17 @@
 <script src="api-client.js"></script>
 <style>
 @import url("https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700;9..40,800&display=swap");
-:root{--primary:#0f172a;--primary-light:#1e293b;--accent:#3b82f6;--accent-dark:#2563eb;--success:#10b981;--danger:#ef4444;--warning:#f59e0b;--bg:#f8fafc;--white:#ffffff;--text:#1e293b;--muted:#64748b;--border:#e2e8f0;--shadow:0 1px 3px rgba(0,0,0,0.1);}
+:root{
+  --primary:#0f172a;--accent:#4f6ef7;--success:#10b981;--danger:#ef4444;--warning:#f59e0b;
+  --bg:#f0f4f8;--surface:#ffffff;--text:#0f172a;--muted:#94a3b8;--border:#e2e8f0;
+  --shadow:0 1px 4px rgba(0,0,0,0.06);--shadow-md:0 4px 16px rgba(0,0,0,0.08);
+  --radius:14px;--radius-sm:10px;
+}
 *{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);}
 .hidden{display:none!important;}
-@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@keyframes slideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
 
 /* LOGIN */
 #loginPage{background:linear-gradient(135deg,var(--primary) 0%,var(--primary-light) 100%);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;}
@@ -22,64 +28,66 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);}
 .logo p{color:var(--muted);font-size:14px;margin-top:8px;}
 
 /* FORMS */
-.form-group{margin-bottom:20px;}
-label{display:block;color:var(--text);font-weight:600;margin-bottom:8px;font-size:14px;}
-input,select,textarea{width:100%;padding:14px;border:2px solid var(--border);border-radius:12px;font-size:15px;font-family:inherit;transition:all 0.2s;background:white;}
-input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(59,130,246,0.1);}
-input[type="password"]{letter-spacing:4px;font-size:24px;text-align:center;}
-.btn{width:100%;padding:16px;background:linear-gradient(135deg,var(--accent),var(--accent-dark));color:white;border:none;border-radius:12px;font-size:16px;font-weight:600;cursor:pointer;transition:transform 0.2s;}
-.btn:hover{transform:translateY(-1px);}
-.btn:disabled{opacity:0.6;cursor:not-allowed;transform:none;}
-.btn-secondary{background:var(--muted)!important;}
+.form-group{margin-bottom:16px;}
+label{display:block;color:var(--text);font-weight:600;margin-bottom:6px;font-size:13px;}
+input,select,textarea{width:100%;padding:12px 14px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:14px;font-family:inherit;transition:all 0.18s;background:#fff;color:var(--text);}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(79,110,247,0.1);}
+input[type="password"]{letter-spacing:4px;font-size:22px;text-align:center;}
+.btn{width:100%;padding:13px 18px;background:var(--accent);color:white;border:none;border-radius:var(--radius-sm);font-size:14px;font-weight:700;cursor:pointer;transition:all 0.18s;font-family:inherit;}
+.btn:hover{background:#3b5ce4;transform:translateY(-1px);}
+.btn:active{transform:scale(0.98);}
+.btn:disabled{opacity:0.5;cursor:not-allowed;transform:none;}
+.btn-secondary{background:#64748b!important;}
+.btn-secondary:hover{background:#475569!important;}
 .btn-success{background:var(--success)!important;}
+.btn-success:hover{background:#059669!important;}
 .btn-danger{background:var(--danger)!important;}
-.btn-delete{background:var(--danger);color:white;border:none;padding:8px 12px;border-radius:8px;cursor:pointer;}
-.error{background:#fee;color:#c33;padding:14px;border-radius:12px;margin-bottom:20px;font-size:14px;text-align:center;display:none;}
+.btn-delete{background:var(--danger);color:white;border:none;padding:7px 12px;border-radius:8px;cursor:pointer;font-family:inherit;font-weight:600;}
+.error{background:#fee2e2;color:#991b1b;padding:12px 16px;border-radius:var(--radius-sm);margin-bottom:16px;font-size:13px;text-align:center;display:none;font-weight:600;}
 .error.show{display:block;}
 
 /* HEADER */
-.header{background:linear-gradient(135deg,var(--primary),var(--primary-light));color:white;padding:20px;box-shadow:0 2px 10px rgba(0,0,0,0.1);position:sticky;top:0;z-index:100;}
-.header-inner{max-width:1200px;margin:0 auto;display:flex;justify-content:space-between;align-items:center;}
-.header h1{font-size:28px;font-weight:900;letter-spacing:-0.5px;}
-.user-name{font-size:16px;font-weight:600;}
-.user-role{font-size:13px;opacity:0.8;margin-top:2px;}
-.btn-logout{background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.2);color:white;padding:10px 16px;border-radius:10px;font-size:13px;cursor:pointer;margin-top:8px;}
+.header{background:#ffffff;border-bottom:1px solid var(--border);color:var(--text);padding:0 20px;height:56px;box-shadow:0 1px 6px rgba(0,0,0,0.05);position:sticky;top:0;z-index:100;display:flex;align-items:center;}
+.header-inner{max-width:1200px;margin:0 auto;width:100%;display:flex;justify-content:space-between;align-items:center;}
+.header h1{font-size:17px;font-weight:800;color:var(--text);letter-spacing:-0.2px;}
+.user-name{font-size:13px;font-weight:700;color:var(--text);}
+.user-role{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;}
+.btn-logout{background:transparent;border:1px solid var(--border);color:var(--muted);padding:7px 14px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;transition:all 0.15s;}
+.btn-logout:hover{border-color:#ef4444;color:#ef4444;background:#fef2f2;}
 
 /* CONTAINER */
-.container{padding:20px;max-width:1200px;margin:0 auto;}
+.container{padding:16px 20px;max-width:1200px;margin:0 auto;}
 
 /* STATS */
-.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:15px;margin-bottom:30px;}
-.stat-card{background:var(--white);padding:20px 22px;border-radius:16px;box-shadow:0 2px 8px rgba(0,0,0,0.07);min-height:95px;display:flex;flex-direction:column;justify-content:space-between;position:relative;overflow:hidden;transition:transform 0.2s,box-shadow 0.2s;}
-.stat-card:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,0.1);}
-.stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--card-accent,var(--accent));}
-.stat-label{font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:0.5px;}
-.stat-value{font-size:24px;font-weight:700;margin-top:6px;line-height:1.2;}
-.stat-icon{position:absolute;right:16px;top:50%;transform:translateY(-50%);font-size:28px;opacity:0.12;}
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:24px;}
+.stat-card{background:var(--surface);padding:18px 20px;border-radius:var(--radius);box-shadow:var(--shadow);display:flex;flex-direction:column;border-left:3px solid var(--card-accent,var(--accent));transition:transform 0.18s,box-shadow 0.18s;}
+.stat-card:hover{transform:translateY(-1px);box-shadow:var(--shadow-md);}
+.stat-label{font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:6px;}
+.stat-value{font-size:22px;font-weight:800;line-height:1.2;color:var(--text);}
 
 /* MENU */
-.menu-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;}
-.menu-btn{border:none;padding:26px 16px 22px;border-radius:18px;cursor:pointer;transition:all 0.22s;text-align:center;position:relative;overflow:hidden;}
-.menu-btn:hover{transform:translateY(-3px);box-shadow:0 10px 28px rgba(0,0,0,0.18)!important;}
-.menu-btn:active{transform:translateY(0);}
-.menu-icon{font-size:32px;margin-bottom:10px;display:block;}
-.menu-label{font-size:14px;font-weight:700;letter-spacing:0.2px;}
+.menu-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;}
+.menu-btn{background:var(--surface);border:1px solid var(--border);padding:22px 14px 18px;border-radius:var(--radius);cursor:pointer;transition:all 0.18s;text-align:center;}
+.menu-btn:hover{border-color:var(--accent);transform:translateY(-2px);box-shadow:var(--shadow-md);}
+.menu-btn:active{transform:scale(0.98);}
+.menu-icon{font-size:28px;margin-bottom:8px;display:block;}
+.menu-label{font-size:13px;font-weight:700;color:var(--text);}
 
 /* CARDS */
-.card{background:var(--white);padding:18px;border-radius:14px;margin-bottom:12px;box-shadow:var(--shadow);cursor:pointer;transition:all 0.2s;}
-.card:hover{transform:translateX(4px);box-shadow:0 4px 12px rgba(0,0,0,0.12);}
-.card.alert{border-left:4px solid var(--danger);}
-.card-title{font-size:17px;font-weight:700;color:var(--text);margin-bottom:6px;}
-.card-alias{font-size:14px;color:var(--accent);font-style:italic;margin-bottom:4px;}
-.card-info{font-size:14px;color:var(--muted);margin-bottom:3px;}
+.card{background:var(--surface);padding:16px 18px;border-radius:var(--radius);margin-bottom:10px;box-shadow:var(--shadow);cursor:pointer;transition:all 0.18s;border:1px solid var(--border);}
+.card:hover{border-color:#cbd5e1;box-shadow:var(--shadow-md);transform:translateY(-1px);}
+.card.alert{border-left:3px solid var(--danger);}
+.card-title{font-size:16px;font-weight:800;color:var(--text);margin-bottom:4px;}
+.card-alias{font-size:13px;color:var(--accent);font-weight:600;margin-bottom:3px;}
+.card-info{font-size:13px;color:var(--muted);margin-bottom:2px;display:flex;align-items:center;gap:5px;}
 
 /* SEARCH */
-.search-box{background:var(--white);padding:16px;border-radius:14px;margin-bottom:20px;box-shadow:var(--shadow);}
+.search-box{background:var(--surface);padding:12px;border-radius:var(--radius);margin-bottom:14px;box-shadow:var(--shadow);}
 
 /* BADGES */
-.badge{display:inline-block;padding:4px 10px;border-radius:8px;font-size:12px;font-weight:700;}
-.badge-ok{background:#d1fae5;color:#065f46;}
-.badge-warning{background:#fef3c7;color:#92400e;}
+.badge{display:inline-flex;align-items:center;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:700;letter-spacing:0.2px;}
+.badge-ok{background:#dcfce7;color:#166534;}
+.badge-warning{background:#fef9c3;color:#854d0e;}
 .badge-danger{background:#fee2e2;color:#991b1b;}
 
 /* BTN ADD */
@@ -87,18 +95,19 @@ input[type="password"]{letter-spacing:4px;font-size:24px;text-align:center;}
 .btn-add:hover{transform:scale(1.1);}
 
 /* LOADING / EMPTY */
-.loading{text-align:center;padding:60px 20px;color:var(--muted);}
-.empty{text-align:center;padding:60px 20px;color:var(--muted);font-size:15px;background:var(--white);border-radius:14px;}
+.loading{text-align:center;padding:48px 20px;color:var(--muted);font-size:13px;font-weight:600;letter-spacing:0.5px;}
+.empty{text-align:center;padding:48px 20px;color:var(--muted);font-size:14px;background:var(--surface);border-radius:var(--radius);border:1px solid var(--border);}
 
 /* DETAIL */
-.detail-header{background:var(--white);padding:24px;border-radius:16px;margin-bottom:20px;box-shadow:var(--shadow);}
-.detail-title{font-size:24px;font-weight:800;margin-bottom:6px;}
-.detail-subtitle{font-size:15px;color:var(--muted);}
-.info-row{display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--border);}
+.detail-header{background:var(--surface);padding:20px 22px;border-radius:var(--radius);margin-bottom:14px;box-shadow:var(--shadow);border:1px solid var(--border);}
+.detail-title{font-size:22px;font-weight:800;margin-bottom:3px;}
+.detail-subtitle{font-size:13px;color:var(--muted);}
+.info-row{display:flex;justify-content:space-between;align-items:center;padding:11px 0;border-bottom:1px solid var(--border);}
 .info-row:last-child{border-bottom:none;}
-.info-label{font-size:14px;color:var(--muted);font-weight:600;}
-.info-value{font-size:15px;color:var(--text);font-weight:500;text-align:right;}
-.wa-btn{display:flex;align-items:center;gap:8px;background:#25D366;color:white;padding:14px 20px;border-radius:12px;text-decoration:none;font-weight:600;font-size:15px;justify-content:center;}
+.info-label{font-size:12px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:0.4px;}
+.info-value{font-size:14px;color:var(--text);font-weight:600;text-align:right;}
+.wa-btn{display:flex;align-items:center;gap:8px;background:#25D366;color:white;padding:12px 18px;border-radius:var(--radius-sm);text-decoration:none;font-weight:700;font-size:14px;justify-content:center;transition:background 0.15s;}
+.wa-btn:hover{background:#22c55e;}
 
 /* CARRITO */
 .carrito-item{background:var(--bg);padding:14px;border-radius:12px;margin-bottom:8px;}
@@ -331,15 +340,14 @@ input[type="password"]{letter-spacing:4px;font-size:24px;text-align:center;}
     <div class="header-inner">
       <button class="btn-logout" onclick="showDashboard()">← Volver</button>
       <h1>Clientes</h1>
-      <div style="width:80px;"></div>
+      <button class="btn-logout" onclick="showFormCliente()" style="background:var(--accent);border-color:var(--accent);color:white;">+ Nuevo</button>
     </div>
   </div>
   <div class="container">
     <div class="search-box">
-      <input type="text" id="searchClientes" placeholder="🔍 Buscar por nombre, CI o apodo...">
+      <input type="text" id="searchClientes" placeholder="Buscar por nombre, CI o apodo..." style="border:none;box-shadow:none;padding:10px 12px;font-size:14px;background:transparent;">
     </div>
     <div id="listaClientes"></div>
-    <button class="btn-add" onclick="showFormCliente()">+</button>
   </div>
 </div>
 
@@ -431,35 +439,38 @@ input[type="password"]{letter-spacing:4px;font-size:24px;text-align:center;}
   <div class="header">
     <div class="header-inner">
       <button class="btn-logout" onclick="showClientes()">← Volver</button>
-      <h1>Cliente</h1>
-      <div style="width:80px;"></div>
+      <h1 id="detalleNombre" style="font-size:15px;"></h1>
+      <button class="btn-logout" onclick="editarCliente()">Editar</button>
     </div>
   </div>
-  <div class="container">
-    <div class="detail-header">
-      <div class="detail-title" id="detalleNombre"></div>
-      <div class="detail-subtitle" id="detalleCiRuc"></div>
-    </div>
+  <div class="container" style="padding-bottom:32px;">
 
-    <div style="background:var(--white);padding:24px;border-radius:16px;box-shadow:var(--shadow);margin-bottom:20px;">
-      <h3 style="margin-bottom:16px;font-size:14px;color:var(--muted);text-transform:uppercase;">Contacto</h3>
-      <div class="info-row"><span class="info-label">Teléfono</span><span class="info-value" id="detalleTelefono"></span></div>
-      <div class="info-row"><span class="info-label">Dirección</span><span class="info-value" id="detalleDireccion"></span></div>
-      <div class="info-row"><span class="info-label">Ciudad / Barrio</span><span class="info-value" id="detalleCiudad"></span></div>
-
-      <div style="display:flex;gap:10px;margin-top:16px;flex-wrap:wrap;">
-        <a id="detalleWhatsapp" href="#" target="_blank" class="wa-btn" style="flex:1;min-width:160px;">
-          <span style="font-size:20px;">💬</span> WhatsApp
-        </a>
-        <button onclick="nuevaVentaDesdeCliente()" class="btn" style="flex:1;min-width:160px;">🛒 Nueva Venta</button>
-        <button onclick="editarCliente()" class="btn btn-secondary" style="flex:1;min-width:160px;">✏️ Editar</button>
+    <!-- Perfil -->
+    <div style="background:var(--surface);border-radius:var(--radius);padding:20px;margin-bottom:12px;box-shadow:var(--shadow);border:1px solid var(--border);">
+      <div style="display:flex;align-items:center;gap:14px;margin-bottom:16px;">
+        <div style="width:48px;height:48px;border-radius:12px;background:linear-gradient(135deg,#4f6ef7,#7c3aed);display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:800;color:white;flex-shrink:0;" id="detalleIniciales">—</div>
+        <div>
+          <div style="font-size:18px;font-weight:800;color:var(--text);" id="detalleNombreBody"></div>
+          <div style="font-size:12px;color:var(--muted);font-weight:600;" id="detalleCiRuc"></div>
+        </div>
       </div>
+      <div class="info-row"><span class="info-label">Teléfono</span><span class="info-value" id="detalleTelefono">—</span></div>
+      <div class="info-row"><span class="info-label">Dirección</span><span class="info-value" id="detalleDireccion">—</span></div>
+      <div class="info-row" style="border:none;"><span class="info-label">Ciudad / Barrio</span><span class="info-value" id="detalleCiudad">—</span></div>
     </div>
 
-    <div style="background:var(--white);padding:24px;border-radius:16px;box-shadow:var(--shadow);">
-      <h3 style="margin-bottom:16px;font-size:14px;color:var(--muted);text-transform:uppercase;">Historial de Compras</h3>
+    <!-- Acciones rápidas -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px;">
+      <a id="detalleWhatsapp" href="#" target="_blank" class="wa-btn">💬 WhatsApp</a>
+      <button onclick="nuevaVentaDesdeCliente()" class="btn" style="margin:0;">🛒 Nueva Venta</button>
+    </div>
+
+    <!-- Historial -->
+    <div style="margin-bottom:8px;">
+      <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:10px;">Historial de compras</div>
       <div id="ventasCliente"></div>
     </div>
+
   </div>
 </div>
 
@@ -685,6 +696,50 @@ input[type="password"]{letter-spacing:4px;font-size:24px;text-align:center;}
       <h3 style="font-size:14px;color:var(--muted);text-transform:uppercase;margin-bottom:14px;">Rentabilidad <span style="font-size:11px;font-weight:400;">(solo ventas con costo cargado)</span></h3>
       <div id="tablaRentabilidad"></div>
     </div>
+
+  </div>
+</div>
+
+
+<!-- DETALLE VENTA (página propia, reemplaza modal) -->
+<div id="detalleVentaPage" class="hidden">
+  <div class="header">
+    <div class="header-inner">
+      <button class="btn-logout" id="detalleVentaVolver">← Volver</button>
+      <h1 id="detalleVentaPedido" style="font-size:14px;">Detalle</h1>
+      <div style="width:80px;"></div>
+    </div>
+  </div>
+  <div class="container" style="padding-bottom:32px;">
+
+    <!-- Producto(s) -->
+    <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:8px;">Producto</div>
+    <div id="dvProductos" style="background:var(--surface);border-radius:var(--radius);padding:16px 18px;box-shadow:var(--shadow);border:1px solid var(--border);margin-bottom:12px;"></div>
+
+    <!-- Financiero -->
+    <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:8px;">Resumen financiero</div>
+    <div style="background:var(--surface);border-radius:var(--radius);padding:4px 18px;box-shadow:var(--shadow);border:1px solid var(--border);margin-bottom:12px;">
+      <div class="info-row"><span class="info-label">Total venta</span><span class="info-value" id="dvTotalVenta"></span></div>
+      <div class="info-row" id="dvEntregaRow"><span class="info-label">Entrega inicial</span><span class="info-value" style="color:var(--success);font-weight:700;" id="dvEntrega"></span></div>
+      <div class="info-row"><span class="info-label">Saldo financiado</span><span class="info-value" id="dvSaldoFinanciar"></span></div>
+      <div class="info-row"><span class="info-label">Garantía</span><span class="info-value" id="dvGarantia"></span></div>
+      <div class="info-row" style="border:none;"><span class="info-label" style="font-size:13px;color:var(--text);">Saldo actual</span><span id="dvSaldoActual" style="font-size:16px;font-weight:800;"></span></div>
+    </div>
+
+    <!-- Cuotas -->
+    <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:8px;">Cuotas</div>
+    <div id="dvCuotas" style="margin-bottom:12px;"></div>
+
+    <!-- Pagos -->
+    <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:8px;">Historial de pagos</div>
+    <div id="dvPagos" style="background:var(--surface);border-radius:var(--radius);padding:4px 18px;box-shadow:var(--shadow);border:1px solid var(--border);margin-bottom:16px;"></div>
+
+    <!-- Acciones -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+      <button onclick="reimprimirComprobante(APP.detalleVentaId)" class="btn btn-secondary" style="margin:0;font-size:13px;">🖨️ Comp. Venta</button>
+      <button onclick="imprimirEstadoCuenta(APP.detalleVentaId)" class="btn btn-secondary" style="margin:0;font-size:13px;">📋 Estado Cta</button>
+    </div>
+    <button onclick="mostrarAnularVenta(APP.detalleVentaId)" class="btn" style="background:#ef4444;margin-top:8px;font-size:13px;">🚫 Anular Venta</button>
 
   </div>
 </div>
