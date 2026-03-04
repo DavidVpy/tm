@@ -12,17 +12,17 @@ function fmtFechaHora(val) {
 // ============================================
 
 const CIUDADES_PY = [
-  'ASUNCIÓN','FERNANDO DE LA MORA','LAMBARÉ','LUQUE','SAN LORENZO','CAPIATÁ','LIMPIO',
-  'ÑEMBY','VILLA ELISA','MARIANO ROQUE ALONSO','ITAUGUÁ','AREGUÁ','YPACARAÍ','CAACUPÉ',
-  'PARAGUARÍ','VILLETA','SAN ANTONIO','YPANÉ','CIUDAD DEL ESTE','PRESIDENTE FRANCO',
-  'HERNANDARIAS','MINGA GUAZÚ','ENCARNACIÓN','CORONEL OVIEDO','CONCEPCIÓN',
+  'ASUNCIÃ“N','FERNANDO DE LA MORA','LAMBARÃ‰','LUQUE','SAN LORENZO','CAPIATÃ','LIMPIO',
+  'Ã‘EMBY','VILLA ELISA','MARIANO ROQUE ALONSO','ITAUGUÃ','AREGUÃ','YPACARAÃ','CAACUPÃ‰',
+  'PARAGUARÃ','VILLETA','SAN ANTONIO','YPANÃ‰','CIUDAD DEL ESTE','PRESIDENTE FRANCO',
+  'HERNANDARIAS','MINGA GUAZÃš','ENCARNACIÃ“N','CORONEL OVIEDO','CONCEPCIÃ“N',
   'PEDRO JUAN CABALLERO','OTRO'
 ];
 
 const MOTIVOS_ANULACION = [
-  'CLIENTE DESISTIÓ DE LA COMPRA',
-  'ERROR EN EL VALOR DE LA OPERACIÓN',
-  'ERROR EN SELECCIÓN DE PRODUCTO',
+  'CLIENTE DESISTIÃ“ DE LA COMPRA',
+  'ERROR EN EL VALOR DE LA OPERACIÃ“N',
+  'ERROR EN SELECCIÃ“N DE PRODUCTO',
   'PAGO REGISTRADO POR ERROR',
   'DUPLICADO',
   'OTROS'
@@ -41,10 +41,10 @@ function recuperarSesion() { try { const r = sessionStorage.getItem('tm_user'); 
 function cerrarSesion() { sessionStorage.removeItem('tm_user'); location.reload(); }
 
 // ============================================
-// TOAST + LOADER + ANIMACIÓN
+// TOAST + LOADER + ANIMACIÃ“N
 // ============================================
 function toast(msg, tipo='info', dur=3000) {
-  const c = {success:{bg:'#10b981',icon:'✅'},error:{bg:'#ef4444',icon:'❌'},warning:{bg:'#f59e0b',icon:'⚠️'},info:{bg:'#3b82f6',icon:'ℹ️'}}[tipo]||{bg:'#3b82f6',icon:'ℹ️'};
+  const c = {success:{bg:'#10b981',icon:'âœ…'},error:{bg:'#ef4444',icon:'âŒ'},warning:{bg:'#f59e0b',icon:'âš ï¸'},info:{bg:'#3b82f6',icon:'â„¹ï¸'}}[tipo]||{bg:'#3b82f6',icon:'â„¹ï¸'};
   const t = document.createElement('div');
   t.style.cssText = `position:fixed;bottom:90px;left:50%;transform:translateX(-50%) translateY(20px);background:${c.bg};color:white;padding:14px 22px;border-radius:14px;font-size:15px;font-weight:600;z-index:9999;max-width:340px;text-align:center;box-shadow:0 8px 24px rgba(0,0,0,0.25);opacity:0;transition:all 0.35s cubic-bezier(0.34,1.56,0.64,1);display:flex;align-items:center;gap:10px;`;
   t.innerHTML = `<span style="font-size:20px">${c.icon}</span><span>${msg}</span>`;
@@ -134,7 +134,7 @@ async function imprimirTicketBluetooth(datos) {
   const addBarcode = (value) => items.push({type:2, value:String(value).replace(/[^A-Z0-9]/g,''), width:250, height:70, align:1});
   const sp = () => add(' ');
   
-  // Función helper para fecha con hora y segundos
+  // FunciÃ³n helper para fecha con hora y segundos
   const fmtFechaHora = (fecha) => {
     const f = fecha instanceof Date ? fecha : new Date(fecha);
     const d = f.toLocaleDateString('es-PY');
@@ -301,8 +301,8 @@ async function showDashboard() {
   // Saludo y fecha
   const ahora = new Date();
   const hora  = ahora.getHours();
-  const saludo = hora < 12 ? 'Buenos días' : hora < 19 ? 'Buenas tardes' : 'Buenas noches';
-  const dias  = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+  const saludo = hora < 12 ? 'Buenos dÃ­as' : hora < 19 ? 'Buenas tardes' : 'Buenas noches';
+  const dias  = ['Domingo','Lunes','Martes','MiÃ©rcoles','Jueves','Viernes','SÃ¡bado'];
   const meses = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
   const fechaStr = dias[ahora.getDay()] + ', ' + ahora.getDate() + ' de ' + meses[ahora.getMonth()];
   const saludoEl = document.getElementById('dashSaludo');
@@ -349,9 +349,9 @@ function renderClientes(clientes) {
           <div class="card-title">${c.Nombres} ${c.Apellidos}</div>
           ${alias}
           <div class="card-info">CI/RUC: ${c.CI_RUC}</div>
-          <div class="card-info">📱 ${c.Telefono||'SIN TELÉFONO'}</div>
+          <div class="card-info">ðŸ“± ${c.Telefono||'SIN TELÃ‰FONO'}</div>
         </div>
-        <div style="font-size:22px;opacity:0.3;">›</div>
+        <div style="font-size:22px;opacity:0.3;">â€º</div>
       </div>
     </div>`;
   });
@@ -402,15 +402,15 @@ function renderVentasCliente(ventas) {
   ventas.forEach(v => {
     const tieneEntrega = parseFloat(v.Entrega_Inicial) > 0;
     const saldoColor = v.Saldo_Actual > 0 ? 'var(--danger)' : 'var(--success)';
-    const badgeText = v.Saldo_Actual > 0 ? 'SALDO: '+fmtGs(v.Saldo_Actual) : '✅ PAGADO';
+    const badgeText = v.Saldo_Actual > 0 ? 'SALDO: '+fmtGs(v.Saldo_Actual) : 'âœ… PAGADO';
     const badgeClass = v.Saldo_Actual > 0 ? 'badge-warning' : 'badge-ok';
     html += `<div class="card" onclick="verDetalleVenta('${v.ID_Venta}')">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;">
         <div style="flex:1;">
           <div class="card-title">${v.Numero_Pedido}</div>
-          <div class="card-info" style="font-weight:500;color:var(--text);">📦 ${v.Productos||'SIN PRODUCTOS'}</div>
-          <div class="card-info">📅 ${fmtFecha(v.Fecha_Venta)}</div>
-          <div class="card-info">TOTAL: ${fmtGs(v.Total_Venta)}${tieneEntrega?' · ENTREGA: '+fmtGs(v.Entrega_Inicial):''}</div>
+          <div class="card-info" style="font-weight:500;color:var(--text);">ðŸ“¦ ${v.Productos||'SIN PRODUCTOS'}</div>
+          <div class="card-info">ðŸ“… ${fmtFecha(v.Fecha_Venta)}</div>
+          <div class="card-info">TOTAL: ${fmtGs(v.Total_Venta)}${tieneEntrega?' Â· ENTREGA: '+fmtGs(v.Entrega_Inicial):''}</div>
           <div class="card-info" style="color:${saldoColor};font-weight:700;">SALDO ACTUAL: ${fmtGs(v.Saldo_Actual)}</div>
         </div>
         <span class="badge ${badgeClass}" style="margin-left:8px;white-space:nowrap;">${badgeText}</span>
@@ -432,7 +432,7 @@ async function verDetalleVenta(idVenta) {
   hideAll();
   document.getElementById('detalleVentaPage').classList.remove('hidden');
   document.getElementById('detalleVentaVolver').onclick = () => verDetalleCliente(APP.clienteActual.ID_Cliente);
-  document.getElementById('detalleVentaPedido').textContent = venta.Numero_Pedido + ' — ' + fmtFecha(venta.Fecha_Venta);
+  document.getElementById('detalleVentaPedido').textContent = venta.Numero_Pedido + ' â€” ' + fmtFecha(venta.Fecha_Venta);
 
   // Productos
   document.getElementById('dvProductos').innerHTML = detalles.length ? detalles.map(d => `
@@ -495,7 +495,7 @@ async function verDetalleVenta(idVenta) {
 }
 
 // ============================================
-// REIMPRESIÓN
+// REIMPRESIÃ“N
 // ============================================
 // Reimprime el ticket unificado de un cobro (nuevo flujo con ticketIdGrupo)
 async function reimprimirPagoGrupo(ticketIdGrupo) {
@@ -580,11 +580,11 @@ function mostrarAnularVenta(idVenta) {
   modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:6000;display:flex;align-items:center;justify-content:center;padding:20px;';
   const optsHtml = MOTIVOS_ANULACION.map(m => `<option value="${m}">${m}</option>`).join('');
   modal.innerHTML = `<div style="background:white;border-radius:20px;padding:28px;width:100%;max-width:440px;">
-    <div style="font-size:18px;font-weight:800;color:#ef4444;margin-bottom:6px;">🚫 ANULAR VENTA</div>
+    <div style="font-size:18px;font-weight:800;color:#ef4444;margin-bottom:6px;">ðŸš« ANULAR VENTA</div>
     <div style="font-size:13px;color:var(--muted);margin-bottom:20px;">${idVenta}</div>
-    <label style="font-weight:600;display:block;margin-bottom:6px;font-size:14px;">MOTIVO DE ANULACIÓN</label>
+    <label style="font-weight:600;display:block;margin-bottom:6px;font-size:14px;">MOTIVO DE ANULACIÃ“N</label>
     <select id="motivoAnulacion" style="width:100%;padding:12px;border:2px solid var(--border);border-radius:12px;font-size:14px;box-sizing:border-box;margin-bottom:12px;">${optsHtml}</select>
-    <label style="font-weight:600;display:block;margin-bottom:6px;font-size:14px;">OBSERVACIÓN (OPCIONAL)</label>
+    <label style="font-weight:600;display:block;margin-bottom:6px;font-size:14px;">OBSERVACIÃ“N (OPCIONAL)</label>
     <textarea id="obsAnulacion" style="width:100%;padding:12px;border:2px solid var(--border);border-radius:12px;font-size:14px;box-sizing:border-box;min-height:80px;resize:none;" placeholder="DETALLES ADICIONALES..."></textarea>
     <div style="display:flex;gap:10px;margin-top:16px;">
       <button onclick="document.getElementById('modalAnulacion').remove()" class="btn btn-secondary" style="flex:1;">CANCELAR</button>
@@ -614,12 +614,12 @@ function mostrarAnularPago(idGrupo, codigoVerif) {
   modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:6000;display:flex;align-items:center;justify-content:center;padding:20px;';
   const optsHtml = MOTIVOS_ANULACION.map(m => `<option value="${m}">${m}</option>`).join('');
   modal.innerHTML = `<div style="background:white;border-radius:20px;padding:28px;width:100%;max-width:440px;">
-    <div style="font-size:18px;font-weight:800;color:#ef4444;margin-bottom:6px;">🚫 ANULAR COBRO</div>
-    <div style="font-size:12px;color:#ef4444;font-weight:600;margin-bottom:4px;">SE ANULARÁN TODOS LOS PAGOS DE ESTE COBRO</div>
+    <div style="font-size:18px;font-weight:800;color:#ef4444;margin-bottom:6px;">ðŸš« ANULAR COBRO</div>
+    <div style="font-size:12px;color:#ef4444;font-weight:600;margin-bottom:4px;">SE ANULARÃN TODOS LOS PAGOS DE ESTE COBRO</div>
     <div style="font-size:12px;color:var(--muted);margin-bottom:20px;">${codigoVerif}</div>
-    <label style="font-weight:600;display:block;margin-bottom:6px;font-size:14px;">MOTIVO DE ANULACIÓN</label>
+    <label style="font-weight:600;display:block;margin-bottom:6px;font-size:14px;">MOTIVO DE ANULACIÃ“N</label>
     <select id="motivoAnulacion" style="width:100%;padding:12px;border:2px solid var(--border);border-radius:12px;font-size:14px;box-sizing:border-box;margin-bottom:12px;">${optsHtml}</select>
-    <label style="font-weight:600;display:block;margin-bottom:6px;font-size:14px;">OBSERVACIÓN (OPCIONAL)</label>
+    <label style="font-weight:600;display:block;margin-bottom:6px;font-size:14px;">OBSERVACIÃ“N (OPCIONAL)</label>
     <textarea id="obsAnulacion" style="width:100%;padding:12px;border:2px solid var(--border);border-radius:12px;font-size:14px;box-sizing:border-box;min-height:80px;resize:none;" placeholder="DETALLES ADICIONALES..."></textarea>
     <div style="display:flex;gap:10px;margin-top:16px;">
       <button onclick="document.getElementById('modalAnulacion').remove()" class="btn btn-secondary" style="flex:1;">CANCELAR</button>
@@ -677,7 +677,7 @@ document.getElementById('ciudadSelect').addEventListener('change', function(){
 });
 function obtenerGPS() {
   if (!navigator.geolocation) { toast('GPS NO DISPONIBLE','error'); return; }
-  toast('OBTENIENDO UBICACIÓN...','info',2000);
+  toast('OBTENIENDO UBICACIÃ“N...','info',2000);
   navigator.geolocation.getCurrentPosition(
     pos => {
       const lat = pos.coords.latitude, lng = pos.coords.longitude;
@@ -686,12 +686,12 @@ function obtenerGPS() {
       toast('GPS: '+lat.toFixed(4)+', '+lng.toFixed(4),'success',4000);
       const prev = document.getElementById('gpsPreview');
       if (prev) {
-        prev.innerHTML = `<a href="https://www.google.com/maps?q=${lat},${lng}" target="_blank" style="color:var(--accent);font-size:13px;">📍 VER EN MAPA: ${lat.toFixed(5)}, ${lng.toFixed(5)}</a>`;
+        prev.innerHTML = `<a href="https://www.google.com/maps?q=${lat},${lng}" target="_blank" style="color:var(--accent);font-size:13px;">ðŸ“ VER EN MAPA: ${lat.toFixed(5)}, ${lng.toFixed(5)}</a>`;
         prev.style.display='block';
       }
     },
     err => {
-      const msgs={1:'PERMISO DENEGADO.',2:'POSICIÓN NO DISPONIBLE.',3:'TIEMPO AGOTADO.'};
+      const msgs={1:'PERMISO DENEGADO.',2:'POSICIÃ“N NO DISPONIBLE.',3:'TIEMPO AGOTADO.'};
       toast(msgs[err.code]||'ERROR GPS','error',4000);
     },
     { enableHighAccuracy:true, timeout:15000, maximumAge:0 }
@@ -792,7 +792,7 @@ function renderBuscadorClientes(inputId, hiddenIdId, hiddenNombreId) {
     dropdown.innerHTML = filtered.map(c => `
       <div onclick="window['sel_${inputId}']('${c.ID_Cliente}')" style="padding:12px 16px;cursor:pointer;border-bottom:1px solid var(--border);" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='white'">
         <div style="font-weight:600;">${c.Nombres} ${c.Apellidos}${c.Alias?' "'+c.Alias+'"':''}</div>
-        <div style="font-size:12px;color:var(--muted);">CI: ${c.CI_RUC} · ${c.Telefono||'SIN TEL'}</div>
+        <div style="font-size:12px;color:var(--muted);">CI: ${c.CI_RUC} Â· ${c.Telefono||'SIN TEL'}</div>
       </div>`).join('');
     dropdown.style.display='block';
   }
@@ -812,7 +812,7 @@ function renderCarrito() {
   const items = APP.ventaActual;
   let total = 0;
   if (!items.length) {
-    document.getElementById('carritoItems').innerHTML='<div class="empty">CARRITO VACÍO</div>';
+    document.getElementById('carritoItems').innerHTML='<div class="empty">CARRITO VACÃO</div>';
     document.getElementById('carritoTotal').textContent=fmtGs(0);
     document.getElementById('ventaTotalInput').value=0; return;
   }
@@ -825,7 +825,7 @@ function renderCarrito() {
       <div class="item-info">
         <span>${item.cantidad} X ${fmtGs(item.precio)} = ${fmtGs(sub)}</span>
         ${item.costo>0?'<span style="color:var(--muted);font-size:12px;">COSTO: '+fmtGs(item.costo)+'</span>':''}
-        <button onclick="eliminarItemCarrito(${idx})" class="btn-delete">🗑️</button>
+        <button onclick="eliminarItemCarrito(${idx})" class="btn-delete">ðŸ—‘ï¸</button>
       </div>
     </div>`;
   });
@@ -839,8 +839,8 @@ function agregarItemCarrito() {
   const precio = obtenerValorNumerico(document.getElementById('itemPrecio'));
   const costo  = obtenerValorNumerico(document.getElementById('itemCosto'));
   const serial = mayus((document.getElementById('itemSerial')||{value:''}).value.trim());
-  if (!desc)     { toast('INGRESÁ LA DESCRIPCIÓN','warning'); return; }
-  if (precio<=0) { toast('INGRESÁ UN PRECIO VÁLIDO','warning'); return; }
+  if (!desc)     { toast('INGRESÃ LA DESCRIPCIÃ“N','warning'); return; }
+  if (precio<=0) { toast('INGRESÃ UN PRECIO VÃLIDO','warning'); return; }
   APP.ventaActual.push({descripcion:desc,cantidad:cant,precio,costo,serial});
   document.getElementById('itemDesc').value='';
   document.getElementById('itemCantidad').value='1';
@@ -854,8 +854,8 @@ document.getElementById('formVenta').addEventListener('submit', async function(e
   e.preventDefault();
   const idCliente = document.getElementById('ventaClienteId').value;
   const nombreCliente = document.getElementById('ventaClienteNombreHidden').value;
-  if (!idCliente) { toast('SELECCIONÁ UN CLIENTE','warning'); return; }
-  if (!APP.ventaActual.length) { toast('AGREGÁ AL MENOS UN PRODUCTO','warning'); return; }
+  if (!idCliente) { toast('SELECCIONÃ UN CLIENTE','warning'); return; }
+  if (!APP.ventaActual.length) { toast('AGREGÃ AL MENOS UN PRODUCTO','warning'); return; }
   const btn = this.querySelector('button[type=submit]');
   btn.disabled=true; btn.textContent='GUARDANDO...';
   showLoader('REGISTRANDO VENTA...');
@@ -875,7 +875,7 @@ document.getElementById('formVenta').addEventListener('submit', async function(e
     vendedor: APP.user.nombre
   };
   const result = await saveVentaAPI(datos);
-  hideLoader(); btn.disabled=false; btn.textContent='💾 REGISTRAR VENTA';
+  hideLoader(); btn.disabled=false; btn.textContent='ðŸ’¾ REGISTRAR VENTA';
   if (result.success) {
     mostrarConfirmacion('VENTA REGISTRADA');
     setTimeout(async()=>{
@@ -927,9 +927,9 @@ function renderTodasVentas(ventas) {
       <div style="display:flex;justify-content:space-between;align-items:flex-start;">
         <div style="flex:1;">
           <div class="card-title">${v.Numero_Pedido} <span class="badge ${estadoBadge}">${estadoText}</span></div>
-          <div class="card-info" style="font-weight:600;color:var(--text);">👤 ${v.Cliente_Nombre}</div>
-          <div class="card-info" style="font-weight:500;">📦 ${v.Productos||'SIN PRODUCTOS'}</div>
-          <div class="card-info">📅 ${fmtFecha(v.Fecha_Venta)}</div>
+          <div class="card-info" style="font-weight:600;color:var(--text);">ðŸ‘¤ ${v.Cliente_Nombre}</div>
+          <div class="card-info" style="font-weight:500;">ðŸ“¦ ${v.Productos||'SIN PRODUCTOS'}</div>
+          <div class="card-info">ðŸ“… ${fmtFecha(v.Fecha_Venta)}</div>
           <div style="display:flex;gap:20px;margin-top:8px;flex-wrap:wrap;">
             <div class="card-info" style="background:var(--bg);padding:6px 12px;border-radius:8px;">
               <span style="color:var(--muted);font-size:12px;">TOTAL:</span>
@@ -978,7 +978,7 @@ async function showCobranzas() {
 
 function renderClientesConAtraso(lista) {
   if (!lista.length) {
-    document.getElementById('cuotasVencidas').innerHTML='<div class="empty">✅ NO HAY CUOTAS VENCIDAS</div>'; return;
+    document.getElementById('cuotasVencidas').innerHTML='<div class="empty">âœ… NO HAY CUOTAS VENCIDAS</div>'; return;
   }
   let html = '';
   lista.forEach(c => {
@@ -988,14 +988,14 @@ function renderClientesConAtraso(lista) {
       <div style="display:flex;justify-content:space-between;align-items:flex-start;">
         <div style="flex:1;">
           <div class="card-title">${c.Nombre}</div>
-          <div class="card-info">📱 ${c.Telefono||'SIN TEL'}</div>
+          <div class="card-info">ðŸ“± ${c.Telefono||'SIN TEL'}</div>
           <div class="card-info">
             <span style="color:var(--danger);font-weight:700;">${c.CuotasVencidas} CUOTA${c.CuotasVencidas>1?'S':''} VENCIDA${c.CuotasVencidas>1?'S':''}</span>
-            · <span style="font-weight:700;">${fmtGs(c.SaldoTotal)}</span>
+            Â· <span style="font-weight:700;">${fmtGs(c.SaldoTotal)}</span>
           </div>
-          <div class="card-info" style="color:${diasColor};font-weight:600;">⏱️ ${c.MaxDiasAtraso} DÍAS DE ATRASO MÁX.</div>
+          <div class="card-info" style="color:${diasColor};font-weight:600;">â±ï¸ ${c.MaxDiasAtraso} DÃAS DE ATRASO MÃX.</div>
         </div>
-        ${waNum?`<a href="https://wa.me/${waNum}" onclick="event.stopPropagation()" style="background:#25D366;color:white;border-radius:10px;padding:8px 12px;font-size:20px;text-decoration:none;flex-shrink:0;">💬</a>`:''}
+        ${waNum?`<a href="https://wa.me/${waNum}" onclick="event.stopPropagation()" style="background:#25D366;color:white;border-radius:10px;padding:8px 12px;font-size:20px;text-decoration:none;flex-shrink:0;">ðŸ’¬</a>`:''}
       </div>
     </div>`;
   });
@@ -1032,7 +1032,7 @@ async function cargarCuotasCliente() {
     getCuotasClienteAPI(idCliente)
   ]);
   
-  // Si tiene múltiples ventas con saldo, mostrar selector
+  // Si tiene mÃºltiples ventas con saldo, mostrar selector
   const ventasConSaldo = ventas.filter(v => v.Saldo_Actual > 0);
   if (ventasConSaldo.length > 1) {
     let selectorHtml = '<div style="background:var(--white);padding:16px 20px;border-radius:16px;box-shadow:var(--shadow);margin-bottom:16px;">';
@@ -1077,10 +1077,10 @@ function renderCuotasCobranza(cuotas) {
           <div class="card-title">CUOTA ${c.Numero_Cuota}/${c.Total_Cuotas} <span class="badge ${bc}">${label}</span></div>
           <div class="card-info">MONTO: ${fmtGs(c.Monto_Cuota)}</div>
           ${parseFloat(c.Monto_Pagado)>0?'<div class="card-info" style="color:var(--success);">PAGADO: '+fmtGs(c.Monto_Pagado)+'</div>':''}
-          <div class="card-info">SALDO: ${fmtGs(c.Saldo_Cuota)} · VENCE: ${fmtFecha(c.Fecha_Vencimiento)}</div>
+          <div class="card-info">SALDO: ${fmtGs(c.Saldo_Cuota)} Â· VENCE: ${fmtFecha(c.Fecha_Vencimiento)}</div>
         </div>
       </div>
-      ${c.Estado!=='PAGADA'?`<button onclick="mostrarModalPago('${c.ID_Cuota}',${c.Saldo_Cuota},'${c.ID_Venta}',${c.Numero_Cuota},${c.Total_Cuotas})" class="btn btn-success" style="margin-top:10px;width:100%;">💰 REGISTRAR PAGO</button>`:''}
+      ${c.Estado!=='PAGADA'?`<button onclick="mostrarModalPago('${c.ID_Cuota}',${c.Saldo_Cuota},'${c.ID_Venta}',${c.Numero_Cuota},${c.Total_Cuotas})" class="btn btn-success" style="margin-top:10px;width:100%;">ðŸ’° REGISTRAR PAGO</button>`:''}
     </div>`;
   });
   document.getElementById('cuotasCliente').innerHTML=html;
@@ -1095,7 +1095,7 @@ function mostrarModalPago(idCuota, saldo, idVenta, numeroCuota, totalCuotas) {
   // Guardar datos de cuota para usar en confirmarPago
   APP.cuotaActual = {numeroCuota, totalCuotas};
   modal.innerHTML = `<div style="background:white;border-radius:24px 24px 0 0;padding:24px;width:100%;max-width:500px;">
-    <h3 style="margin-bottom:16px;">💰 REGISTRAR PAGO</h3>
+    <h3 style="margin-bottom:16px;">ðŸ’° REGISTRAR PAGO</h3>
     <div style="margin-bottom:12px;">
       <label style="font-weight:600;display:block;margin-bottom:4px;font-size:14px;">CUOTA ${numeroCuota}/${totalCuotas}</label>
       <label style="font-weight:600;display:block;margin-bottom:8px;color:var(--danger);font-size:14px;">SALDO PENDIENTE: ${fmtGs(saldo)}</label>
@@ -1127,7 +1127,7 @@ async function confirmarPago(idCuota, idVenta, saldo) {
     const ahora = new Date();
     fechaPago   = fechaInput.value + 'T' + ahora.toTimeString().substring(0,8);
   }
-  if (!montoPago || montoPago <= 0) { toast('INGRESÁ UN MONTO VÁLIDO','warning'); return; }
+  if (!montoPago || montoPago <= 0) { toast('INGRESÃ UN MONTO VÃLIDO','warning'); return; }
 
   const modal = document.getElementById('modalPago'); if(modal) modal.remove();
   showLoader('REGISTRANDO PAGO...');
@@ -1148,7 +1148,7 @@ async function confirmarPago(idCuota, idVenta, saldo) {
     mostrarConfirmacion(mensaje);
 
     setTimeout(async () => {
-      // El backend ya construyó y guardó el ticket unificado — solo lo enviamos a imprimir
+      // El backend ya construyÃ³ y guardÃ³ el ticket unificado â€” solo lo enviamos a imprimir
       if (result.ticketIdGrupo) {
         await imprimirTicketGuardado(result.ticketIdGrupo);
       }
@@ -1189,7 +1189,7 @@ document.getElementById('loginForm').addEventListener('submit', async function(e
     toast(result.error, 'error');
   }
 });
-function logout() { if (confirm('¿CERRAR SESIÓN?')) cerrarSesion(); }
+function logout() { if (confirm('Â¿CERRAR SESIÃ“N?')) cerrarSesion(); }
 
 
 
@@ -1201,11 +1201,11 @@ async function imprimirEstadoCuenta(idVenta) {
   const pagos = await getPagosVentaAPI(idVenta);
   if (!venta) return;
   
-  // Calcular fecha de última cuota para pagaré
+  // Calcular fecha de Ãºltima cuota para pagarÃ©
   const ultimaCuota = cuotas.length > 0 ? cuotas[cuotas.length - 1] : null;
   const fechaPagare = ultimaCuota ? ultimaCuota.Fecha_Vencimiento : '';
   
-  // Calcular próxima fecha pendiente
+  // Calcular prÃ³xima fecha pendiente
   const cuotasPendientes = cuotas.filter(c => c.Estado === 'PENDIENTE' || c.Estado === 'PARCIAL')
     .sort((a,b) => new Date(a.Fecha_Vencimiento) - new Date(b.Fecha_Vencimiento));
   const proximaFecha = cuotasPendientes.length > 0 ? cuotasPendientes[0].Fecha_Vencimiento : '';
@@ -1227,7 +1227,7 @@ async function imprimirEstadoCuenta(idVenta) {
 }
 
 
-console.log('🚀 TECH MARKET v4.0');
+console.log('ðŸš€ TECH MARKET v4.0');
 
 
 // ============================================
@@ -1290,7 +1290,7 @@ function iniciarEscanerQR() {
   APP.qrScanning = false;
 
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-    if (status) status.textContent = 'Cámara no disponible';
+    if (status) status.textContent = 'CÃ¡mara no disponible';
     return;
   }
   navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
@@ -1299,11 +1299,11 @@ function iniciarEscanerQR() {
       video.srcObject = stream;
       video.play();
       APP.qrScanning  = true;
-      if (status) status.textContent = 'Apuntá la cámara al código de barras';
+      if (status) status.textContent = 'ApuntÃ¡ la cÃ¡mara al cÃ³digo de barras';
       escanearFrames(video, canvas, status);
     })
     .catch(() => {
-      if (status) status.textContent = 'Cámara no disponible — usá otro modo';
+      if (status) status.textContent = 'CÃ¡mara no disponible â€” usÃ¡ otro modo';
     });
 }
 
@@ -1324,7 +1324,7 @@ function escanearFrames(video, canvas, status) {
         if (APP.qrStream) { APP.qrStream.getTracks().forEach(t => t.stop()); APP.qrStream = null; }
         const cod = code.data.trim().toUpperCase();
         document.getElementById('codigoVerifInput') && (document.getElementById('codigoVerifInput').value = cod);
-        if (status) status.textContent = '✅ Detectado: ' + cod;
+        if (status) status.textContent = 'âœ… Detectado: ' + cod;
         ejecutarVerificacion(cod);
         return;
       }
@@ -1345,7 +1345,7 @@ function lectorKeyHandler(event) {
   if (event.key === 'Enter') {
     const cod = _lectorBuffer.trim().toUpperCase();
     _lectorBuffer = '';
-    if (st) st.textContent = '✅ Detectado: ' + cod;
+    if (st) st.textContent = 'âœ… Detectado: ' + cod;
     if (cod) ejecutarVerificacion(cod);
   } else if (event.key.length === 1) {
     _lectorBuffer += event.key;
@@ -1356,7 +1356,7 @@ function lectorKeyHandler(event) {
       const cod = _lectorBuffer.trim().toUpperCase();
       _lectorBuffer = '';
       if (cod && cod.length > 5) {
-        if (st) st.textContent = '✅ Detectado: ' + cod;
+        if (st) st.textContent = 'âœ… Detectado: ' + cod;
         ejecutarVerificacion(cod);
       }
     }, 500);
@@ -1367,18 +1367,18 @@ function lectorKeyHandler(event) {
 async function ejecutarVerificacion(codigoParam) {
   const input  = document.getElementById('codigoVerifInput');
   const codigo = (codigoParam || (input ? input.value : '')).trim().toUpperCase();
-  if (!codigo) { toast('INGRESÁ UN CÓDIGO', 'warning'); return; }
+  if (!codigo) { toast('INGRESÃ UN CÃ“DIGO', 'warning'); return; }
 
   const res = document.getElementById('resultadoVerificacion');
-  res.innerHTML = '<div style="text-align:center;padding:24px;color:var(--muted);font-size:15px;">⏳ VERIFICANDO...</div>';
+  res.innerHTML = '<div style="text-align:center;padding:24px;color:var(--muted);font-size:15px;">â³ VERIFICANDO...</div>';
 
   const r = await verificarCodigoAPI(codigo);
 
   if (!r.success) {
     res.innerHTML = `<div style="background:#fee2e2;border-radius:14px;padding:20px;text-align:center;">
-      <div style="font-size:40px;">❌</div>
+      <div style="font-size:40px;">âŒ</div>
       <div style="font-weight:800;color:#ef4444;font-size:16px;margin-top:8px;">ERROR DE CONSULTA</div>
-      <div style="font-size:13px;color:var(--muted);margin-top:6px;">${r.error||'Sin conexión'}</div>
+      <div style="font-size:13px;color:var(--muted);margin-top:6px;">${r.error||'Sin conexiÃ³n'}</div>
       <button onclick="limpiarVerificacion()" class="btn btn-secondary" style="margin-top:14px;width:100%;">REINTENTAR</button>
     </div>`;
     return;
@@ -1386,8 +1386,8 @@ async function ejecutarVerificacion(codigoParam) {
 
   if (!r.valido) {
     res.innerHTML = `<div style="background:#fee2e2;border-radius:14px;padding:20px;text-align:center;">
-      <div style="font-size:40px;">🚫</div>
-      <div style="font-weight:800;color:#ef4444;font-size:18px;margin-top:8px;">CÓDIGO NO ENCONTRADO</div>
+      <div style="font-size:40px;">ðŸš«</div>
+      <div style="font-weight:800;color:#ef4444;font-size:18px;margin-top:8px;">CÃ“DIGO NO ENCONTRADO</div>
       <div style="font-size:13px;color:var(--muted);margin-top:6px;font-family:monospace;">${codigo}</div>
       <button onclick="limpiarVerificacion()" class="btn btn-secondary" style="margin-top:14px;width:100%;">ESCANEAR OTRO</button>
     </div>`;
@@ -1396,9 +1396,9 @@ async function ejecutarVerificacion(codigoParam) {
 
   if (r.anulado) {
     res.innerHTML = `<div style="background:#fef3c7;border-radius:14px;padding:20px;text-align:center;">
-      <div style="font-size:40px;">⚠️</div>
-      <div style="font-weight:800;color:#92400e;font-size:16px;margin-top:6px;">CÓDIGO ANULADO</div>
-      <div style="font-size:12px;color:#92400e;margin-top:4px;">Este pago fue anulado y no es válido</div>
+      <div style="font-size:40px;">âš ï¸</div>
+      <div style="font-weight:800;color:#92400e;font-size:16px;margin-top:6px;">CÃ“DIGO ANULADO</div>
+      <div style="font-size:12px;color:#92400e;margin-top:4px;">Este pago fue anulado y no es vÃ¡lido</div>
       <div style="font-family:monospace;background:rgba(0,0,0,0.07);padding:10px;border-radius:8px;margin-top:12px;font-size:13px;">${r.codigo}</div>
       <button onclick="limpiarVerificacion()" class="btn btn-secondary" style="margin-top:14px;width:100%;">ESCANEAR OTRO</button>
     </div>`;
@@ -1407,11 +1407,11 @@ async function ejecutarVerificacion(codigoParam) {
 
   res.innerHTML = `
   <div style="background:#d1fae5;border-radius:14px;padding:16px;margin-bottom:10px;text-align:center;">
-    <div style="font-size:44px;">✅</div>
-    <div style="font-weight:800;color:#065f46;font-size:20px;margin-top:4px;">PAGO VÁLIDO</div>
+    <div style="font-size:44px;">âœ…</div>
+    <div style="font-weight:800;color:#065f46;font-size:20px;margin-top:4px;">PAGO VÃLIDO</div>
   </div>
   <div style="background:white;border-radius:14px;padding:16px;box-shadow:var(--shadow);">
-    ${vFila('CÓDIGO',         r.codigo,                    true)}
+    ${vFila('CÃ“DIGO',         r.codigo,                    true)}
     ${vFila('CLIENTE',        r.cliente)}
     ${vFila('FECHA',          fmtFechaHora(r.fechaPago))}
     ${vFila('PRODUCTO',       r.producto)}
@@ -1420,7 +1420,7 @@ async function ejecutarVerificacion(codigoParam) {
     ${vFilaColor('SALDO RESTANTE',  fmtGs(r.saldoRestante), r.saldoRestante>0?'var(--danger)':'var(--success)', '15px')}
     ${vFila('COBRADOR',       r.cobrador)}
   </div>
-  <button onclick="limpiarVerificacion()" class="btn btn-secondary" style="width:100%;margin-top:14px;">🔍 ESCANEAR OTRO</button>`;
+  <button onclick="limpiarVerificacion()" class="btn btn-secondary" style="width:100%;margin-top:14px;">ðŸ” ESCANEAR OTRO</button>`;
 }
 
 function vFila(label, valor, mono) {
@@ -1443,7 +1443,7 @@ function limpiarVerificacion() {
 }
 
 // ============================================================
-// MÓDULO INFORMES
+// MÃ“DULO INFORMES
 // ============================================================
 let _informesData = null;
 let _chartCobros  = null;
@@ -1472,14 +1472,14 @@ async function showInformes() {
   }
   _informesData = data;
 
-  // ── TARJETAS ──
+  // â”€â”€ TARJETAS â”€â”€
   document.getElementById('iCartera').textContent  = fmtGs(data.carteraActiva);
   document.getElementById('iVencido').textContent  = fmtGs(data.totalVencido);
   document.getElementById('iMora').textContent     = data.porcentajeMora + '%';
   document.getElementById('iCobroMes').textContent = fmtGs(data.cobroEsperadoMes);
   document.getElementById('iMargen').textContent   = (data.margenPromedio||0) + '%';
 
-  // ── GRÁFICOS ──
+  // â”€â”€ GRÃFICOS â”€â”€
   const mesesLabel = (k) => {
     const [y,m] = k.split('-');
     const nombres = ['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
@@ -1529,7 +1529,7 @@ async function showInformes() {
     });
   }
 
-  // ── TABLAS ──
+  // â”€â”€ TABLAS â”€â”€
   mostrarVencimientos('hoy');
   renderMora(data.moraLista);
   renderRentabilidad(data.rentabilidad, data.totalInversion, data.totalGanancia);
@@ -1541,117 +1541,105 @@ function mostrarVencimientos(modo) {
   const map = { hoy:'vencimientosHoy', manana:'vencimientosManana', semana:'vencimientos7dias' };
   const lista = _informesData[map[modo]] || [];
   ['btnVHoy','btnVMan','btnVSem'].forEach(id => document.getElementById(id).className='btn btn-secondary');
-  const activeMap = {hoy:'btnVHoy',manana:'btnVMan',semana:'btnVSem'};
-  document.getElementById(activeMap[modo]).className='btn';
+  document.getElementById({hoy:'btnVHoy',manana:'btnVMan',semana:'btnVSem'}[modo]).className='btn';
 
   if (!lista.length) {
     document.getElementById('tablaVencimientos').innerHTML = '<div class="empty">Sin vencimientos para este período</div>';
     return;
   }
   let total = 0;
-  let html = '<table style="width:100%;border-collapse:collapse;font-size:13px;">'
-    + '<thead><tr style="border-bottom:2px solid #e2e8f0;">'
-    + '<th style="text-align:left;padding:8px 6px;color:var(--muted);font-weight:600;">CLIENTE</th>'
-    + '<th style="text-align:center;padding:8px 6px;color:var(--muted);font-weight:600;">CUOTA</th>'
-    + '<th style="text-align:center;padding:8px 6px;color:var(--muted);font-weight:600;">VENCE</th>'
-    + '<th style="text-align:right;padding:8px 6px;color:var(--muted);font-weight:600;">MONTO</th>'
-    + '<th style="text-align:center;padding:8px 6px;color:var(--muted);font-weight:600;">WA</th>'
-    + '</tr></thead><tbody>';
-  lista.forEach(r => {
+  const rows = lista.map(r => {
     total += r.monto;
     const dias = r.diasRestantes;
-    const tag = dias < 0
-      ? `<span style="color:#ef4444;font-weight:600;">${Math.abs(dias)}d vencida</span>`
-      : dias === 0 ? '<span style="color:#f59e0b;font-weight:600;">HOY</span>'
-      : `<span style="color:#10b981;">en ${dias}d</span>`;
+    const tag  = dias < 0
+      ? `<span style="color:#ef4444;font-weight:700;font-size:10px;">${Math.abs(dias)}d vencida</span>`
+      : dias === 0 ? '<span style="color:#f59e0b;font-weight:700;font-size:10px;">HOY</span>'
+      : `<span style="color:#10b981;font-weight:700;font-size:10px;">en ${dias}d</span>`;
     const tel = formatTelWA(r.tel);
-    const wa = tel ? `<a href="https://wa.me/${tel}" target="_blank" style="text-decoration:none;">📱</a>` : '—';
-    html += `<tr style="border-bottom:1px solid #f1f5f9;">
-      <td style="padding:9px 6px;font-weight:500;">${r.nombre}</td>
-      <td style="padding:9px 6px;text-align:center;">${String(r.numeroCuota).padStart(2,'0')}/${String(r.totalCuotas).padStart(2,'0')}</td>
-      <td style="padding:9px 6px;text-align:center;">${fmtFecha(r.fechaVenc)}<br><small>${tag}</small></td>
-      <td style="padding:9px 6px;text-align:right;font-weight:600;">${fmtGs(r.monto)}</td>
-      <td style="padding:9px 6px;text-align:center;">${wa}</td>
-    </tr>`;
-  });
-  html += `</tbody><tfoot><tr style="border-top:2px solid #e2e8f0;background:#f8fafc;">
-    <td colspan="3" style="padding:10px 6px;font-weight:700;">TOTAL</td>
-    <td style="padding:10px 6px;text-align:right;font-weight:700;color:#3b82f6;">${fmtGs(total)}</td>
-    <td></td>
-  </tr></tfoot></table>`;
-  document.getElementById('tablaVencimientos').innerHTML = html;
+    const wa  = tel ? `<a href="https://wa.me/${tel}" target="_blank" style="text-decoration:none;font-size:18px;flex-shrink:0;">\ud83d\udcf1</a>` : '';
+    return `<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);">
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:13px;font-weight:700;">${r.nombre}</div>
+        <div style="display:flex;gap:8px;align-items:center;margin-top:3px;flex-wrap:wrap;">
+          <span style="font-size:11px;color:var(--muted);">Cuota ${String(r.numeroCuota).padStart(2,'0')}/${String(r.totalCuotas).padStart(2,'0')}</span>
+          <span style="font-size:11px;color:var(--muted);">${fmtFecha(r.fechaVenc)}</span>
+          ${tag}
+        </div>
+      </div>
+      <div style="font-size:14px;font-weight:700;">${fmtGs(r.monto)}</div>
+      ${wa}
+    </div>`;
+  }).join('');
+  const totalRow = `<div style="display:flex;justify-content:space-between;padding:10px 0;margin-top:2px;border-top:2px solid var(--border);">
+    <span style="font-size:12px;font-weight:800;">TOTAL (${lista.length})</span>
+    <span style="font-size:14px;font-weight:800;color:var(--accent);">${fmtGs(total)}</span>
+  </div>`;
+  document.getElementById('tablaVencimientos').innerHTML = rows + totalRow;
 }
-
 function renderMora(lista) {
   if (!lista || !lista.length) {
-    document.getElementById('tablaMora').innerHTML = '<div class="empty" style="color:#10b981;">✅ Sin mora activa</div>';
+    document.getElementById('tablaMora').innerHTML = '<div class="empty" style="color:#10b981;">\u2705 Sin mora activa</div>';
     return;
   }
-  let html = '<table style="width:100%;border-collapse:collapse;font-size:13px;">'
-    + '<thead><tr style="border-bottom:2px solid #e2e8f0;">'
-    + '<th style="text-align:left;padding:8px 6px;color:var(--muted);font-weight:600;">CLIENTE</th>'
-    + '<th style="text-align:center;padding:8px 6px;color:var(--muted);font-weight:600;">CUOTAS</th>'
-    + '<th style="text-align:right;padding:8px 6px;color:var(--muted);font-weight:600;">VENCIDO</th>'
-    + '<th style="text-align:center;padding:8px 6px;color:var(--muted);font-weight:600;">DÍAS</th>'
-    + '<th style="text-align:center;padding:8px 6px;color:var(--muted);font-weight:600;">WA</th>'
-    + '</tr></thead><tbody>';
-  lista.forEach(r => {
+  const rows = lista.map(r => {
     const color = r.maxDias > 90 ? '#ef4444' : r.maxDias > 30 ? '#f59e0b' : '#64748b';
-    const tel = formatTelWA(r.tel);
-    const wa = tel ? `<a href="https://wa.me/${tel}" target="_blank" style="text-decoration:none;">📱</a>` : '—';
-    html += `<tr style="border-bottom:1px solid #f1f5f9;">
-      <td style="padding:9px 6px;font-weight:500;">${r.nombre}</td>
-      <td style="padding:9px 6px;text-align:center;">${r.cuotasVencidas}</td>
-      <td style="padding:9px 6px;text-align:right;font-weight:600;color:#ef4444;">${fmtGs(r.saldoVencido)}</td>
-      <td style="padding:9px 6px;text-align:center;font-weight:700;color:${color};">${r.maxDias}d</td>
-      <td style="padding:9px 6px;text-align:center;">${wa}</td>
-    </tr>`;
-  });
-  html += '</tbody></table>';
-  document.getElementById('tablaMora').innerHTML = html;
+    const tel   = formatTelWA(r.tel);
+    const wa    = tel ? `<a href="https://wa.me/${tel}" target="_blank" style="text-decoration:none;font-size:18px;">\ud83d\udcf1</a>` : '';
+    return `<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);">
+      <div style="width:8px;height:8px;border-radius:50%;background:${color};flex-shrink:0;"></div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:13px;font-weight:700;">${r.nombre}</div>
+        <div style="font-size:11px;color:var(--muted);">${r.cuotasVencidas} cuota${r.cuotasVencidas>1?'s':''} vencida${r.cuotasVencidas>1?'s':''}</div>
+      </div>
+      <div style="text-align:right;">
+        <div style="font-size:13px;font-weight:700;color:#ef4444;">${fmtGs(r.saldoVencido)}</div>
+        <div style="font-size:11px;font-weight:700;color:${color};">${r.maxDias} días</div>
+      </div>
+      ${wa}
+    </div>`;
+  }).join('');
+  document.getElementById('tablaMora').innerHTML = rows;
 }
-
 function renderRentabilidad(lista, totalInv, totalGan) {
   if (!lista || !lista.length) {
     document.getElementById('tablaRentabilidad').innerHTML = '<div class="empty">Sin ventas con costo cargado</div>';
     return;
   }
-  let html = '<table style="width:100%;border-collapse:collapse;font-size:13px;">'
-    + '<thead><tr style="border-bottom:2px solid #e2e8f0;">'
-    + '<th style="text-align:left;padding:8px 6px;color:var(--muted);font-weight:600;">CLIENTE</th>'
-    + '<th style="text-align:right;padding:8px 6px;color:var(--muted);font-weight:600;">PRECIO</th>'
-    + '<th style="text-align:right;padding:8px 6px;color:var(--muted);font-weight:600;">COSTO</th>'
-    + '<th style="text-align:right;padding:8px 6px;color:var(--muted);font-weight:600;">GANANCIA</th>'
-    + '<th style="text-align:center;padding:8px 6px;color:var(--muted);font-weight:600;">%</th>'
-    + '</tr></thead><tbody>';
-  lista.slice(0,30).forEach(r => {
+  // Mobile-friendly: cada venta es una fila compacta
+  let rows = lista.slice(0,30).map(r => {
     const colorM = r.margen >= 20 ? '#10b981' : r.margen >= 10 ? '#f59e0b' : '#ef4444';
-    html += `<tr style="border-bottom:1px solid #f1f5f9;">
-      <td style="padding:8px 6px;">
-        <div style="font-weight:500;font-size:12px;">${r.cliente}</div>
+    return `<div style="display:grid;grid-template-columns:1fr auto;gap:4px 12px;padding:10px 0;border-bottom:1px solid var(--border);align-items:center;">
+      <div>
+        <div style="font-size:13px;font-weight:700;">${r.cliente}</div>
         <div style="font-size:11px;color:var(--muted);">${fmtFecha(r.fecha)}</div>
-      </td>
-      <td style="padding:8px 6px;text-align:right;">${fmtGs(r.precio)}</td>
-      <td style="padding:8px 6px;text-align:right;color:var(--muted);">${fmtGs(r.costo)}</td>
-      <td style="padding:8px 6px;text-align:right;font-weight:600;color:#10b981;">${fmtGs(r.ganancia)}</td>
-      <td style="padding:8px 6px;text-align:center;font-weight:700;color:${colorM};">${r.margen}%</td>
-    </tr>`;
-  });
-  const margenTotal = (totalInv+totalGan) > 0 ? Math.round((totalGan/(totalInv+totalGan))*100) : 0;
-  html += `</tbody><tfoot><tr style="border-top:2px solid #e2e8f0;background:#f8fafc;">
-    <td style="padding:10px 6px;font-weight:700;">TOTAL</td>
-    <td style="padding:10px 6px;text-align:right;font-weight:700;">${fmtGs(totalInv+totalGan)}</td>
-    <td style="padding:10px 6px;text-align:right;font-weight:700;color:var(--muted);">${fmtGs(totalInv)}</td>
-    <td style="padding:10px 6px;text-align:right;font-weight:700;color:#10b981;">${fmtGs(totalGan)}</td>
-    <td style="padding:10px 6px;text-align:center;font-weight:700;color:#8b5cf6;">${margenTotal}%</td>
-  </tr></tfoot></table>`;
-  document.getElementById('tablaRentabilidad').innerHTML = html;
+        <div style="display:flex;gap:10px;margin-top:4px;flex-wrap:wrap;">
+          <span style="font-size:11px;color:var(--muted);">Precio: <strong style="color:var(--text);">${fmtGs(r.precio)}</strong></span>
+          <span style="font-size:11px;color:var(--muted);">Costo: <strong>${fmtGs(r.costo)}</strong></span>
+        </div>
+      </div>
+      <div style="text-align:right;">
+        <div style="font-size:14px;font-weight:800;color:#10b981;">${fmtGs(r.ganancia)}</div>
+        <div style="font-size:13px;font-weight:700;color:${colorM};">${r.margen}%</div>
+      </div>
+    </div>`;
+  }).join('');
+  const margenTotal = (totalInv+totalGan)>0 ? Math.round((totalGan/(totalInv+totalGan))*100) : 0;
+  rows += `<div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;margin-top:2px;border-top:2px solid var(--border);">
+    <div>
+      <div style="font-size:12px;font-weight:800;">TOTAL</div>
+      <div style="font-size:11px;color:var(--muted);">Precio: ${fmtGs(totalInv+totalGan)} \u2014 Costo: ${fmtGs(totalInv)}</div>
+    </div>
+    <div style="text-align:right;">
+      <div style="font-size:15px;font-weight:800;color:#10b981;">${fmtGs(totalGan)}</div>
+      <div style="font-size:13px;font-weight:700;color:#8b5cf6;">${margenTotal}%</div>
+    </div>
+  </div>`;
+  document.getElementById('tablaRentabilidad').innerHTML = rows;
 }
-
 function imprimirVencimientos() {
   if (!_informesData) return;
   const map  = { hoy:'vencimientosHoy', manana:'vencimientosManana', semana:'vencimientos7dias' };
-  const titMap = { hoy:'COBROS DEL DÍA', manana:'COBROS DE MAÑANA', semana:'COBROS PRÓXIMOS 7 DÍAS' };
+  const titMap = { hoy:'COBROS DEL DÃA', manana:'COBROS DE MAÃ‘ANA', semana:'COBROS PRÃ“XIMOS 7 DÃAS' };
   const lista = _informesData[map[_vencMode]] || [];
   const hoy = new Date().toLocaleDateString('es-PY');
   let total = 0;
@@ -1680,8 +1668,8 @@ function imprimirVencimientos() {
     @media print{body{margin:10px;}button{display:none;}}
   </style></head><body>
   <div style="display:flex;justify-content:space-between;align-items:flex-start;">
-    <div><h2>TECH MARKET — ${titMap[_vencMode]}</h2><div class="sub">Generado: ${hoy} | Total registros: ${lista.length}</div></div>
-    <button onclick="window.print()" style="padding:8px 16px;background:#1e293b;color:white;border:none;border-radius:6px;cursor:pointer;font-size:12px;">🖨️ Imprimir</button>
+    <div><h2>TECH MARKET â€” ${titMap[_vencMode]}</h2><div class="sub">Generado: ${hoy} | Total registros: ${lista.length}</div></div>
+    <button onclick="window.print()" style="padding:8px 16px;background:#1e293b;color:white;border:none;border-radius:6px;cursor:pointer;font-size:12px;">ðŸ–¨ï¸ Imprimir</button>
   </div>
   <table>
     <thead><tr><th>CLIENTE</th><th style="text-align:center;">CUOTA</th><th style="text-align:center;">VENCIMIENTO</th><th style="text-align:right;">MONTO</th></tr></thead>
