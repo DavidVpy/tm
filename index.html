@@ -706,43 +706,75 @@ input[type="password"]{letter-spacing:4px;font-size:22px;text-align:center;}
   <div class="header">
     <div class="header-inner">
       <button class="btn-logout" id="detalleVentaVolver">← Volver</button>
-      <h1 id="detalleVentaPedido" style="font-size:14px;">Detalle</h1>
-      <div style="width:80px;"></div>
+      <h1 id="detalleVentaPedido" style="font-size:13px;font-weight:700;">Detalle</h1>
+      <div style="display:flex;gap:6px;">
+        <button onclick="reimprimirComprobante(APP.detalleVentaId)" class="btn-logout" style="font-size:12px;padding:6px 10px;">🖨️</button>
+        <button onclick="imprimirEstadoCuenta(APP.detalleVentaId)" class="btn-logout" style="font-size:12px;padding:6px 10px;">📋</button>
+      </div>
     </div>
   </div>
+
   <div class="container" style="padding-bottom:32px;">
 
     <!-- Producto(s) -->
-    <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:8px;">Producto</div>
-    <div id="dvProductos" style="background:var(--surface);border-radius:var(--radius);padding:16px 18px;box-shadow:var(--shadow);border:1px solid var(--border);margin-bottom:12px;"></div>
+    <div id="dvProductos" style="background:var(--surface);border-radius:var(--radius);padding:14px 16px;box-shadow:var(--shadow);border:1px solid var(--border);margin-bottom:12px;"></div>
 
-    <!-- Financiero -->
-    <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:8px;">Resumen financiero</div>
-    <div style="background:var(--surface);border-radius:var(--radius);padding:4px 18px;box-shadow:var(--shadow);border:1px solid var(--border);margin-bottom:12px;">
-      <div class="info-row"><span class="info-label">Total venta</span><span class="info-value" id="dvTotalVenta"></span></div>
-      <div class="info-row" id="dvEntregaRow"><span class="info-label">Entrega inicial</span><span class="info-value" style="color:var(--success);font-weight:700;" id="dvEntrega"></span></div>
-      <div class="info-row"><span class="info-label">Saldo financiado</span><span class="info-value" id="dvSaldoFinanciar"></span></div>
-      <div class="info-row"><span class="info-label">Garantía</span><span class="info-value" id="dvGarantia"></span></div>
-      <div class="info-row" style="border:none;"><span class="info-label" style="font-size:13px;color:var(--text);">Saldo actual</span><span id="dvSaldoActual" style="font-size:16px;font-weight:800;"></span></div>
+    <!-- GRID: Financiero + Cuotas lado a lado en desktop, apilado en mobile -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;" class="dv-grid">
+
+      <!-- Financiero (izquierda) -->
+      <div style="background:var(--surface);border-radius:var(--radius);padding:14px 16px;box-shadow:var(--shadow);border:1px solid var(--border);">
+        <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:10px;">Financiero</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border);">
+          <span style="font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:0.4px;">Total</span>
+          <span style="font-size:13px;font-weight:700;" id="dvTotalVenta"></span>
+        </div>
+        <div id="dvEntregaRow" style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border);">
+          <span style="font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:0.4px;">Entrega</span>
+          <span style="font-size:13px;font-weight:700;color:var(--success);" id="dvEntrega"></span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border);">
+          <span style="font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:0.4px;">Financiado</span>
+          <span style="font-size:13px;font-weight:700;" id="dvSaldoFinanciar"></span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border);">
+          <span style="font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:0.4px;">Garantía</span>
+          <span style="font-size:13px;font-weight:600;" id="dvGarantia"></span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0 4px;">
+          <span style="font-size:12px;font-weight:800;color:var(--text);">Saldo actual</span>
+          <span style="font-size:18px;font-weight:800;" id="dvSaldoActual"></span>
+        </div>
+        <!-- Acciones -->
+        <div style="display:grid;grid-template-columns:1fr;gap:6px;margin-top:12px;padding-top:12px;border-top:1px solid var(--border);">
+          <button onclick="reimprimirComprobante(APP.detalleVentaId)" class="btn btn-secondary" style="margin:0;font-size:12px;padding:10px;">🖨️ Comprobante</button>
+          <button onclick="imprimirEstadoCuenta(APP.detalleVentaId)" class="btn btn-secondary" style="margin:0;font-size:12px;padding:10px;">📋 Estado Cta</button>
+          <button onclick="mostrarAnularVenta(APP.detalleVentaId)" class="btn" style="background:#ef4444;margin:0;font-size:12px;padding:10px;">🚫 Anular Venta</button>
+        </div>
+      </div>
+
+      <!-- Cuotas (derecha) -->
+      <div style="background:var(--surface);border-radius:var(--radius);padding:14px 16px;box-shadow:var(--shadow);border:1px solid var(--border);overflow-y:auto;max-height:480px;">
+        <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:10px;" id="dvCuotasLabel">Cuotas</div>
+        <div id="dvCuotas"></div>
+      </div>
+
     </div>
-
-    <!-- Cuotas -->
-    <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:8px;">Cuotas</div>
-    <div id="dvCuotas" style="margin-bottom:12px;"></div>
 
     <!-- Pagos -->
-    <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:8px;">Historial de pagos</div>
-    <div id="dvPagos" style="background:var(--surface);border-radius:var(--radius);padding:4px 18px;box-shadow:var(--shadow);border:1px solid var(--border);margin-bottom:16px;"></div>
-
-    <!-- Acciones -->
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-      <button onclick="reimprimirComprobante(APP.detalleVentaId)" class="btn btn-secondary" style="margin:0;font-size:13px;">🖨️ Comp. Venta</button>
-      <button onclick="imprimirEstadoCuenta(APP.detalleVentaId)" class="btn btn-secondary" style="margin:0;font-size:13px;">📋 Estado Cta</button>
+    <div style="background:var(--surface);border-radius:var(--radius);padding:14px 16px;box-shadow:var(--shadow);border:1px solid var(--border);">
+      <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:10px;">Historial de pagos</div>
+      <div id="dvPagos"></div>
     </div>
-    <button onclick="mostrarAnularVenta(APP.detalleVentaId)" class="btn" style="background:#ef4444;margin-top:8px;font-size:13px;">🚫 Anular Venta</button>
 
   </div>
 </div>
+
+<style>
+@media(max-width:600px){
+  .dv-grid { grid-template-columns:1fr !important; }
+}
+</style>
 
 </body>
 </html>
