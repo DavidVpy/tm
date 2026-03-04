@@ -455,23 +455,26 @@ async function verDetalleVenta(idVenta) {
   saldoEl.style.color = venta.Saldo_Actual > 0 ? 'var(--danger)' : 'var(--success)';
 
   // Cuotas
+  // Cuotas compactas con dot de color
+  const dvCuotasLabel = document.getElementById('dvCuotasLabel');
+  if (dvCuotasLabel) dvCuotasLabel.textContent = 'Cuotas (' + cuotas.length + ')';
   document.getElementById('dvCuotas').innerHTML = cuotas.length ? cuotas.map(cu => {
-    const bc    = cu.Estado==='PAGADA'?'badge-ok':cu.Estado==='PARCIAL'?'badge-warning':'badge-danger';
-    const label = cu.Estado==='PAGADA'?'Pagada':cu.Estado==='PARCIAL'?'Parcial':'Pendiente';
-    return `<div style="background:var(--surface);border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:8px;border:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
-      <div>
-        <div style="font-size:13px;font-weight:700;">Cuota ${cu.Numero_Cuota}/${cu.Total_Cuotas}</div>
-        <div style="font-size:11px;color:var(--muted);margin-top:2px;">Vence ${fmtFecha(cu.Fecha_Vencimiento)}</div>
-        ${parseFloat(cu.Monto_Pagado)>0?`<div style="font-size:11px;color:var(--success);font-weight:600;">Pagado: ${fmtGs(cu.Monto_Pagado)}</div>`:''}
+    const isPagada  = cu.Estado==='PAGADA';
+    const isParcial = cu.Estado==='PARCIAL';
+    const dotColor  = isPagada ? 'var(--success)' : isParcial ? 'var(--warning)' : '#e2e8f0';
+    const montoMostrar = cu.Saldo_Cuota > 0 ? cu.Saldo_Cuota : cu.Monto_Cuota;
+    return `<div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--border);">
+      <div style="width:7px;height:7px;border-radius:50%;background:${dotColor};flex-shrink:0;"></div>
+      <div style="flex:1;min-width:0;">
+        <span style="font-size:12px;font-weight:700;">${cu.Numero_Cuota}/${cu.Total_Cuotas}</span>
+        <span style="font-size:11px;color:var(--muted);margin-left:6px;">${fmtFecha(cu.Fecha_Vencimiento)}</span>
+        ${isParcial?`<span style="font-size:10px;color:var(--warning);font-weight:700;margin-left:4px;">+${fmtGs(cu.Monto_Pagado)}</span>`:''}
       </div>
-      <div style="text-align:right;">
-        <div style="font-weight:800;font-size:14px;">${fmtGs(cu.Saldo_Cuota>0?cu.Saldo_Cuota:cu.Monto_Cuota)}</div>
-        <span class="badge ${bc}">${label}</span>
-      </div>
+      <div style="font-size:13px;font-weight:700;color:${isPagada?'var(--success)':isParcial?'var(--warning)':'var(--text)'};">${isPagada?'\u2713':fmtGs(montoMostrar)}</div>
     </div>`;
   }).join('') : '<div class="empty">Sin cuotas</div>';
 
-  // Pagos
+  // Pagos compactos
   document.getElementById('dvPagos').innerHTML = pagos.length ? pagos.map(trx => {
     const cs = (trx.Cuotas && trx.Cuotas.length > 0) ? trx.Cuotas : [];
     const totalStr = String(trx.Total_Cuotas || '?').padStart(2,'0');
@@ -480,18 +483,15 @@ async function verDetalleVenta(idVenta) {
       :'Cuotas '+cs.map(c=>String(c.Numero_Cuota).padStart(2,'0')).join(', ')+'/'+totalStr;
     const primerCodigo = cs.length>0?cs[0].Codigo_Verificacion:'';
     const tIdGrupo     = trx.Ticket_ID_Grupo||'';
-    return `<div class="info-row">
-      <div>
-        <div style="font-size:13px;font-weight:700;">${cuotasDesc}</div>
+    return `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);">
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:13px;font-weight:700;">${cuotasDesc} <span style="font-weight:800;color:var(--success);">${fmtGs(trx.Monto_Total||0)}</span></div>
         <div style="font-size:11px;color:var(--muted);">${fmtFecha(trx.Fecha_Pago)}</div>
-        <div style="font-size:12px;color:var(--success);font-weight:600;">${fmtGs(trx.Monto_Total||0)}</div>
       </div>
-      <div style="display:flex;gap:6px;align-items:center;">
-        <button onclick="reimprimirPagoGrupo('${tIdGrupo}')" style="background:var(--bg);border:1px solid var(--border);padding:7px 10px;border-radius:8px;cursor:pointer;font-size:13px;">print</button>
-        <button onclick="mostrarAnularPago('${tIdGrupo}','${primerCodigo}')" style="background:#fee2e2;border:none;padding:7px 10px;border-radius:8px;cursor:pointer;font-size:13px;color:#991b1b;">X</button>
-      </div>
+      <button onclick="reimprimirPagoGrupo('${tIdGrupo}')" style="background:var(--bg);border:1px solid var(--border);padding:6px 9px;border-radius:7px;cursor:pointer;font-size:13px;" title="Reimprimir">\ud83d\udda8\ufe0f</button>
+      <button onclick="mostrarAnularPago('${tIdGrupo}','${primerCodigo}')" style="background:#fee2e2;border:none;padding:6px 9px;border-radius:7px;cursor:pointer;font-size:12px;color:#991b1b;font-weight:700;" title="Anular">\u2715</button>
     </div>`;
-  }).join('') : '<div style="padding:14px 0;color:var(--muted);font-size:13px;">Sin pagos registrados</div>';
+  }).join('') : '<div style="padding:12px 0;color:var(--muted);font-size:13px;">Sin pagos registrados</div>';
 }
 
 // ============================================
