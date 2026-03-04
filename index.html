@@ -114,102 +114,129 @@ input[type="password"]{letter-spacing:4px;font-size:24px;text-align:center;}
   .btn-add{bottom:20px;right:20px;width:56px;height:56px;font-size:24px;}
 }
 
-/* ─── DARK DASHBOARD ──────────────────────────── */
+/* ─── DARK DASHBOARD ─────────────────────────────────────────── */
 #dashboardPage {
-  background: #080c14;
+  background: #07090f;
   min-height: 100vh;
 }
-#dashboardPage .dash-header {
-  background: #080c14;
-  border-bottom: 1px solid rgba(255,255,255,0.06);
-  position: sticky; top: 0; z-index: 100;
-  padding: 14px 20px;
-}
-#dashboardPage .dash-header-inner {
-  max-width: 1200px; margin: 0 auto;
-  display: flex; justify-content: space-between; align-items: center;
-}
-#dashboardPage .dash-logo {
-  display: flex; align-items: center; gap: 11px;
-}
-#dashboardPage .dash-logo-badge {
-  background: linear-gradient(135deg, #3b82f6, #8b5cf6);
-  border-radius: 10px; width: 38px; height: 38px;
-  display: flex; align-items: center; justify-content: center;
-  font-family: 'Syne', sans-serif; font-weight: 900; font-size: 14px;
-  color: white; box-shadow: 0 0 16px rgba(99,102,241,0.5);
-}
-#dashboardPage .dash-brand { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 17px; color: #f1f5f9; letter-spacing: -0.3px; }
-#dashboardPage .dash-date  { font-size: 11px; color: #475569; margin-top: 1px; letter-spacing: 0.5px; }
-#dashboardPage .dash-user  { text-align: right; }
-#dashboardPage .dash-username { font-weight: 700; font-size: 14px; color: #e2e8f0; }
-#dashboardPage .dash-role  { font-size: 11px; color: #475569; text-transform: uppercase; letter-spacing: 0.5px; }
-#dashboardPage .dash-exit  {
-  background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08);
-  color: #94a3b8; padding: 7px 14px; border-radius: 8px;
-  font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit;
-  transition: all 0.18s; margin-left: 12px;
-}
-#dashboardPage .dash-exit:hover { background: rgba(239,68,68,0.15); color: #f87171; border-color: rgba(239,68,68,0.3); }
-#dashboardPage .dash-container { padding: 20px; max-width: 1200px; margin: 0 auto; }
-#dashboardPage .dash-greeting { margin-bottom: 22px; }
-#dashboardPage .dash-hi { font-family: 'Syne', sans-serif; font-size: 20px; font-weight: 800; color: #f1f5f9; }
-#dashboardPage .dash-sub { font-size: 13px; color: #475569; margin-top: 3px; }
 
-/* DARK STAT CARDS */
-#dashboardPage .dk-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px,1fr)); gap: 12px; margin-bottom: 24px; }
-#dashboardPage .dk-card {
-  background: #0f1623;
-  border: 1px solid rgba(255,255,255,0.06);
-  border-radius: 14px; padding: 18px 20px;
-  position: relative; overflow: hidden;
-  transition: transform 0.2s, box-shadow 0.2s;
-  cursor: default;
+/* HEADER */
+.dash-header {
+  background: rgba(7,9,15,0.95);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  position: sticky; top:0; z-index:100;
+  padding: 12px 20px;
 }
-#dashboardPage .dk-card:hover { transform: translateY(-2px); }
-#dashboardPage .dk-card-glow {
-  position: absolute; top: -20px; right: -20px;
-  width: 80px; height: 80px; border-radius: 50%;
-  background: var(--glow); opacity: 0.15; filter: blur(20px);
+.dash-header-inner {
+  max-width:1200px; margin:0 auto;
+  display:flex; justify-content:space-between; align-items:center;
 }
-#dashboardPage .dk-card-line {
-  position: absolute; top: 0; left: 0; right: 0; height: 2px;
-  background: var(--glow);
+.dash-logo { display:flex; align-items:center; gap:10px; }
+.dash-logo-badge {
+  background: linear-gradient(135deg,#4f6ef7,#a855f7);
+  border-radius:10px; width:36px; height:36px;
+  display:flex; align-items:center; justify-content:center;
+  font-family:"Syne",sans-serif; font-weight:900; font-size:13px; color:white;
+  box-shadow: 0 0 20px rgba(99,102,241,0.4);
 }
-#dashboardPage .dk-label { font-size: 11px; color: #475569; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; }
-#dashboardPage .dk-value { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 26px; color: #f1f5f9; line-height: 1; }
-#dashboardPage .dk-value.sm { font-size: 17px; }
+.dash-brand  { font-family:"Syne",sans-serif; font-weight:800; font-size:15px; color:#e2e8f0; letter-spacing:0.2px; }
+.dash-date   { font-size:10px; color:#334155; margin-top:2px; letter-spacing:0.8px; text-transform:uppercase; }
+.dash-user   { text-align:right; }
+.dash-username { font-weight:700; font-size:13px; color:#cbd5e1; }
+.dash-role   { font-size:10px; color:#334155; text-transform:uppercase; letter-spacing:0.5px; }
+.dash-exit {
+  background:transparent; border:1px solid rgba(255,255,255,0.08);
+  color:#475569; padding:6px 13px; border-radius:7px;
+  font-size:12px; font-weight:600; cursor:pointer; font-family:inherit;
+  transition:all 0.18s; margin-left:12px;
+}
+.dash-exit:hover { border-color:rgba(239,68,68,0.4); color:#f87171; }
 
-/* DARK MENU */
-#dashboardPage .dk-section-label { font-size: 11px; font-weight: 700; color: #334155; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 11px; font-family: 'Syne', sans-serif; }
-#dashboardPage .dk-menu { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
-#dashboardPage .dk-btn {
-  border: none; border-radius: 14px; padding: 20px 12px 16px;
-  cursor: pointer; text-align: center; transition: all 0.2s;
-  position: relative; overflow: hidden;
-  background: #0f1623; border: 1px solid rgba(255,255,255,0.06);
-}
-#dashboardPage .dk-btn:hover { transform: translateY(-3px); border-color: rgba(255,255,255,0.12); }
-#dashboardPage .dk-btn:active { transform: scale(0.97); }
-#dashboardPage .dk-btn-glow {
-  position: absolute; bottom: -10px; left: 50%; transform: translateX(-50%);
-  width: 60px; height: 30px; border-radius: 50%;
-  background: var(--btn-glow); opacity: 0; filter: blur(12px);
-  transition: opacity 0.2s;
-}
-#dashboardPage .dk-btn:hover .dk-btn-glow { opacity: 0.6; }
-#dashboardPage .dk-icon { font-size: 26px; margin-bottom: 8px; display: block; }
-#dashboardPage .dk-label-btn { font-size: 12px; font-weight: 700; color: #94a3b8; letter-spacing: 0.2px; }
+/* CONTAINER */
+.dash-container { padding:20px; max-width:1200px; margin:0 auto; }
 
-@media(max-width:768px){
-  #dashboardPage .dk-stats { grid-template-columns: 1fr 1fr; }
-  #dashboardPage .dk-menu  { grid-template-columns: repeat(3,1fr); gap: 8px; }
-  #dashboardPage .dk-btn   { padding: 16px 8px 14px; }
-  #dashboardPage .dk-icon  { font-size: 22px; }
-  #dashboardPage .dk-label-btn { font-size: 11px; }
-  #dashboardPage .dk-value { font-size: 22px; }
+/* GREETING */
+.dash-greeting { margin-bottom:24px; }
+.dash-hi  { font-family:"Syne",sans-serif; font-size:21px; font-weight:800; color:#f1f5f9; line-height:1.2; }
+.dash-sub { font-size:12px; color:#334155; margin-top:4px; letter-spacing:0.3px; }
+
+/* STAT CARDS */
+.dk-stats {
+  display:grid;
+  grid-template-columns: repeat(2,1fr);
+  gap:10px;
+  margin-bottom:24px;
 }
-/* ──────────────────────────────────────────────── */
+.dk-card {
+  background:#0d1117;
+  border:1px solid rgba(255,255,255,0.05);
+  border-radius:14px;
+  padding:18px 18px 16px;
+  position:relative; overflow:hidden;
+  transition:border-color 0.2s, transform 0.2s;
+}
+.dk-card:hover { transform:translateY(-1px); border-color:rgba(255,255,255,0.1); }
+.dk-card-accent {
+  position:absolute; top:0; left:18px; right:18px; height:1px;
+  background: var(--ac);
+  box-shadow: 0 0 12px var(--ac);
+}
+.dk-label {
+  font-size:10px; color:#334155; font-weight:700;
+  text-transform:uppercase; letter-spacing:0.8px;
+  margin-bottom:10px;
+}
+.dk-count {
+  font-family:"Syne",sans-serif;
+  font-size:32px; font-weight:900;
+  color: var(--ac);
+  line-height:1; margin-bottom:6px;
+}
+.dk-monto {
+  font-size:13px; font-weight:600;
+  color:#64748b;
+  letter-spacing:0.2px;
+}
+.dk-card.wide { grid-column: span 2; }
+
+/* MODULE BUTTONS */
+.dk-section-label {
+  font-size:10px; font-weight:700; color:#1e293b;
+  text-transform:uppercase; letter-spacing:1.2px;
+  margin-bottom:10px; font-family:"Syne",sans-serif;
+}
+.dk-menu {
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:8px;
+}
+.dk-btn {
+  border:none; border-radius:12px;
+  padding:18px 10px 15px;
+  cursor:pointer; text-align:center;
+  background:#0d1117;
+  border:1px solid rgba(255,255,255,0.05);
+  transition:all 0.18s;
+  position:relative; overflow:hidden;
+}
+.dk-btn:hover {
+  border-color: var(--btn-glow,rgba(255,255,255,0.12));
+  transform:translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+}
+.dk-btn:active { transform:scale(0.97); }
+.dk-icon { font-size:24px; margin-bottom:7px; display:block; }
+.dk-label-btn { font-size:11px; font-weight:700; color:#475569; letter-spacing:0.3px; }
+.dk-btn:hover .dk-label-btn { color:#94a3b8; }
+
+@media(max-width:480px){
+  .dk-count { font-size:26px; }
+  .dk-monto { font-size:12px; }
+  .dk-btn   { padding:14px 8px 12px; }
+  .dk-icon  { font-size:20px; }
+}
+/* ─────────────────────────────────────────────────────────── */
 </style>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
@@ -237,7 +264,6 @@ input[type="password"]{letter-spacing:4px;font-size:24px;text-align:center;}
 <!-- DASHBOARD -->
 <div id="dashboardPage" class="hidden">
 
-  <!-- HEADER DARK -->
   <div class="dash-header">
     <div class="dash-header-inner">
       <div class="dash-logo">
@@ -259,73 +285,69 @@ input[type="password"]{letter-spacing:4px;font-size:24px;text-align:center;}
 
   <div class="dash-container">
 
-    <!-- SALUDO -->
     <div class="dash-greeting">
       <div class="dash-hi" id="dashSaludo">Buenos días</div>
       <div class="dash-sub">Resumen del negocio al día de hoy</div>
     </div>
 
-    <!-- STATS DARK -->
     <div class="dk-stats">
-      <div class="dk-card" style="--glow:#3b82f6;">
-        <div class="dk-card-line"></div><div class="dk-card-glow"></div>
+
+      <div class="dk-card" style="--ac:#4f6ef7;">
+        <div class="dk-card-accent"></div>
         <div class="dk-label">Ventas hoy</div>
-        <div class="dk-value" id="statVentasHoy">—</div>
+        <div class="dk-count" id="statVentasHoy">—</div>
+        <div class="dk-monto" id="statVentasHoyMonto">GS. —</div>
       </div>
-      <div class="dk-card" style="--glow:#10b981;">
-        <div class="dk-card-line"></div><div class="dk-card-glow"></div>
+
+      <div class="dk-card" style="--ac:#10b981;">
+        <div class="dk-card-accent"></div>
         <div class="dk-label">Cobros hoy</div>
-        <div class="dk-value" id="statCobrosHoy">—</div>
+        <div class="dk-count" id="statCobrosHoy">—</div>
+        <div class="dk-monto" id="statCobrosHoyMonto">GS. —</div>
       </div>
-      <div class="dk-card" style="--glow:#ef4444;">
-        <div class="dk-card-line"></div><div class="dk-card-glow"></div>
+
+      <div class="dk-card" style="--ac:#ef4444;">
+        <div class="dk-card-accent"></div>
         <div class="dk-label">Cuotas vencidas</div>
-        <div class="dk-value" id="statCuotasVencidas">—</div>
+        <div class="dk-count" id="statCuotasVencidas">—</div>
+        <div class="dk-monto" id="statVencidoMonto">GS. —</div>
       </div>
-      <div class="dk-card" style="--glow:#f59e0b;">
-        <div class="dk-card-line"></div><div class="dk-card-glow"></div>
+
+      <div class="dk-card" style="--ac:#f59e0b;">
+        <div class="dk-card-accent"></div>
         <div class="dk-label">Ventas este mes</div>
-        <div class="dk-value sm" id="statVentasMes">—</div>
+        <div class="dk-count" id="statVentasMesNum">—</div>
+        <div class="dk-monto" id="statVentasMes">GS. —</div>
       </div>
-      <div class="dk-card" style="--glow:#8b5cf6;">
-        <div class="dk-card-line"></div><div class="dk-card-glow"></div>
+
+      <div class="dk-card wide" style="--ac:#a855f7;">
+        <div class="dk-card-accent"></div>
         <div class="dk-label">Cartera activa</div>
-        <div class="dk-value sm" id="statCreditosActivos">—</div>
+        <div class="dk-count" id="statCreditosActivos">—</div>
+        <div class="dk-monto" id="statCarteraMonto">GS. —</div>
       </div>
+
     </div>
 
-    <!-- MENU DARK -->
     <div class="dk-section-label">Módulos</div>
     <div class="dk-menu">
-      <button class="dk-btn" onclick="showClientes()" style="--btn-glow:#6366f1;">
-        <div class="dk-btn-glow"></div>
-        <span class="dk-icon">👥</span>
-        <div class="dk-label-btn">Clientes</div>
+      <button class="dk-btn" onclick="showClientes()" style="--btn-glow:rgba(99,102,241,0.3);">
+        <span class="dk-icon">👥</span><div class="dk-label-btn">Clientes</div>
       </button>
-      <button class="dk-btn" onclick="showVentas()" style="--btn-glow:#3b82f6;">
-        <div class="dk-btn-glow"></div>
-        <span class="dk-icon">🛒</span>
-        <div class="dk-label-btn">Nueva Venta</div>
+      <button class="dk-btn" onclick="showVentas()" style="--btn-glow:rgba(79,110,247,0.3);">
+        <span class="dk-icon">🛒</span><div class="dk-label-btn">Nueva Venta</div>
       </button>
-      <button class="dk-btn" onclick="showListadoVentas()" style="--btn-glow:#06b6d4;">
-        <div class="dk-btn-glow"></div>
-        <span class="dk-icon">📋</span>
-        <div class="dk-label-btn">Ventas</div>
+      <button class="dk-btn" onclick="showListadoVentas()" style="--btn-glow:rgba(6,182,212,0.3);">
+        <span class="dk-icon">📋</span><div class="dk-label-btn">Ventas</div>
       </button>
-      <button class="dk-btn" onclick="showCobranzas()" style="--btn-glow:#10b981;">
-        <div class="dk-btn-glow"></div>
-        <span class="dk-icon">💰</span>
-        <div class="dk-label-btn">Cobranzas</div>
+      <button class="dk-btn" onclick="showCobranzas()" style="--btn-glow:rgba(16,185,129,0.3);">
+        <span class="dk-icon">💰</span><div class="dk-label-btn">Cobranzas</div>
       </button>
-      <button class="dk-btn" onclick="showVerificador()" style="--btn-glow:#f59e0b;">
-        <div class="dk-btn-glow"></div>
-        <span class="dk-icon">🔍</span>
-        <div class="dk-label-btn">Verificar</div>
+      <button class="dk-btn" onclick="showVerificador()" style="--btn-glow:rgba(245,158,11,0.3);">
+        <span class="dk-icon">🔍</span><div class="dk-label-btn">Verificar</div>
       </button>
-      <button class="dk-btn" onclick="showInformes()" style="--btn-glow:#8b5cf6;">
-        <div class="dk-btn-glow"></div>
-        <span class="dk-icon">📈</span>
-        <div class="dk-label-btn">Informes</div>
+      <button class="dk-btn" onclick="showInformes()" style="--btn-glow:rgba(168,85,247,0.3);">
+        <span class="dk-icon">📈</span><div class="dk-label-btn">Informes</div>
       </button>
     </div>
 
