@@ -297,11 +297,26 @@ async function showDashboard() {
   document.getElementById('dashboardPage').classList.remove('hidden');
   document.getElementById('userName').textContent = APP.user.nombre;
   document.getElementById('userRole').textContent = APP.user.rol;
+
+  // Saludo y fecha dinámica
+  const ahora = new Date();
+  const hora = ahora.getHours();
+  const saludo = hora < 12 ? 'Buenos días' : hora < 19 ? 'Buenas tardes' : 'Buenas noches';
+  const diasSem = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+  const meses = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  const fechaStr = diasSem[ahora.getDay()] + ', ' + ahora.getDate() + ' de ' + meses[ahora.getMonth()];
+  const saludoEl = document.getElementById('dashSaludo');
+  const fechaEl  = document.getElementById('dashFecha');
+  if (saludoEl) saludoEl.textContent = saludo + ', ' + APP.user.nombre;
+  if (fechaEl)  fechaEl.textContent  = fechaStr.toUpperCase();
+
   const stats = await getEstadisticasAPI();
   if (stats) {
     document.getElementById('statVentasHoy').textContent = stats.ventasHoy;
     document.getElementById('statCobrosHoy').textContent = stats.cobrosHoy;
-    document.getElementById('statCuotasVencidas').textContent = stats.cuotasVencidas;
+    const venc = document.getElementById('statCuotasVencidas');
+    venc.textContent = stats.cuotasVencidas;
+    if (stats.cuotasVencidas > 0) venc.style.color = '#ef4444';
     document.getElementById('statVentasMes').textContent = fmtGs(stats.totalVentasMes||0);
     document.getElementById('statCreditosActivos').textContent = (stats.creditosActivos||0) + ' · ' + fmtGs(stats.totalCreditosActivos||0);
   }
