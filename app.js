@@ -377,21 +377,21 @@ async function verDetalleCliente(id) {
   if (bodyNombre) bodyNombre.textContent = nombreCompleto;
   const iniciales = document.getElementById('detalleIniciales');
   if (iniciales) iniciales.textContent = ((c.Nombres||'?')[0]).toUpperCase();
-  document.getElementById('detalleCiRuc').textContent = 'CI/RUC: ' + c.CI_RUC + (c.Alias ? '  \u2022  "'+c.Alias+'"' : '');
+  document.getElementById('detalleCiRuc').textContent = 'CI/RUC: ' + c.CI_RUC + (c.Alias ? '  â€¢  "'+c.Alias+'"' : '');
   const telEl = document.getElementById('detalleTelefono');
-  if (c.Telefono) telEl.innerHTML = `<a href="tel:${c.Telefono}" style="color:var(--accent);text-decoration:none;font-weight:600;">\ud83d\udcf1 ${c.Telefono}</a>`;
-  else telEl.textContent = '\u2014';
+  if (c.Telefono) telEl.innerHTML = `<a href="tel:${c.Telefono}" style="color:var(--accent);text-decoration:none;font-weight:600;">ðŸ“± ${c.Telefono}</a>`;
+  else telEl.textContent = 'â€”';
   const waEl = document.getElementById('detalleWhatsapp');
   const waNum = formatTelWA(c.Tel_WhatsApp||c.Telefono);
   if (waNum) { waEl.href = 'https://wa.me/'+waNum; waEl.style.display='flex'; } else waEl.style.display='none';
   const dirEl = document.getElementById('detalleDireccion');
   if (c.GPS_Lat && c.GPS_Lng && String(c.GPS_Lat).length > 3) {
-    dirEl.innerHTML = `<a href="https://www.google.com/maps?q=${c.GPS_Lat},${c.GPS_Lng}" target="_blank" style="color:var(--accent);text-decoration:none;font-weight:600;">\ud83d\udccd ${c.Direccion||'Ver en mapa'}</a>`;
+    dirEl.innerHTML = `<a href="https://www.google.com/maps?q=${c.GPS_Lat},${c.GPS_Lng}" target="_blank" style="color:var(--accent);text-decoration:none;font-weight:600;">ðŸ“ ${c.Direccion||'Ver en mapa'}</a>`;
   } else if (c.Direccion) {
     const q = encodeURIComponent((c.Direccion||'')+' '+(c.Ciudad||'')+' Paraguay');
-    dirEl.innerHTML = `<a href="https://www.google.com/maps/search/${q}" target="_blank" style="color:var(--accent);text-decoration:none;font-weight:600;">\ud83d\udccd ${c.Direccion}</a>`;
-  } else dirEl.textContent = '\u2014';
-  document.getElementById('detalleCiudad').textContent = [c.Ciudad, c.Barrio].filter(Boolean).join(' \u2014 ') || '\u2014';
+    dirEl.innerHTML = `<a href="https://www.google.com/maps/search/${q}" target="_blank" style="color:var(--accent);text-decoration:none;font-weight:600;">ðŸ“ ${c.Direccion}</a>`;
+  } else dirEl.textContent = 'â€”';
+  document.getElementById('detalleCiudad').textContent = [c.Ciudad, c.Barrio].filter(Boolean).join(' â€” ') || 'â€”';
   document.getElementById('ventasCliente').innerHTML = '<div class="loading">CARGANDO...</div>';
   const ventas = await getVentasClienteAPI(id);
   renderVentasCliente(ventas);
@@ -470,7 +470,7 @@ async function verDetalleVenta(idVenta) {
         <span style="font-size:11px;color:var(--muted);margin-left:6px;">${fmtFecha(cu.Fecha_Vencimiento)}</span>
         ${isParcial?`<span style="font-size:10px;color:var(--warning);font-weight:700;margin-left:4px;">+${fmtGs(cu.Monto_Pagado)}</span>`:''}
       </div>
-      <div style="font-size:13px;font-weight:700;color:${isPagada?'var(--success)':isParcial?'var(--warning)':'var(--text)'};">${isPagada?'\u2713':fmtGs(montoMostrar)}</div>
+      <div style="font-size:13px;font-weight:700;color:${isPagada?'var(--success)':isParcial?'var(--warning)':'var(--text)'};">${isPagada?'âœ“':fmtGs(montoMostrar)}</div>
     </div>`;
   }).join('') : '<div class="empty">Sin cuotas</div>';
 
@@ -488,8 +488,8 @@ async function verDetalleVenta(idVenta) {
         <div style="font-size:13px;font-weight:700;">${cuotasDesc} <span style="font-weight:800;color:var(--success);">${fmtGs(trx.Monto_Total||0)}</span></div>
         <div style="font-size:11px;color:var(--muted);">${fmtFecha(trx.Fecha_Pago)}</div>
       </div>
-      <button onclick="reimprimirPagoGrupo('${tIdGrupo}')" style="background:var(--bg);border:1px solid var(--border);padding:6px 9px;border-radius:7px;cursor:pointer;font-size:13px;" title="Reimprimir">\ud83d\udda8\ufe0f</button>
-      <button onclick="mostrarAnularPago('${tIdGrupo}','${primerCodigo}')" style="background:#fee2e2;border:none;padding:6px 9px;border-radius:7px;cursor:pointer;font-size:12px;color:#991b1b;font-weight:700;" title="Anular">\u2715</button>
+      <button onclick="reimprimirPagoGrupo('${tIdGrupo}')" style="background:var(--bg);border:1px solid var(--border);padding:6px 9px;border-radius:7px;cursor:pointer;font-size:13px;" title="Reimprimir">ðŸ–¨ï¸</button>
+      <button onclick="mostrarAnularPago('${tIdGrupo}','${primerCodigo}')" style="background:#fee2e2;border:none;padding:6px 9px;border-radius:7px;cursor:pointer;font-size:12px;color:#991b1b;font-weight:700;" title="Anular">âœ•</button>
     </div>`;
   }).join('') : '<div style="padding:12px 0;color:var(--muted);font-size:13px;">Sin pagos registrados</div>';
 }
@@ -1556,7 +1556,7 @@ function mostrarVencimientos(modo) {
       : dias === 0 ? '<span style="color:#f59e0b;font-weight:700;font-size:10px;">HOY</span>'
       : `<span style="color:#10b981;font-weight:700;font-size:10px;">en ${dias}d</span>`;
     const tel = formatTelWA(r.tel);
-    const wa  = tel ? `<a href="https://wa.me/${tel}" target="_blank" style="text-decoration:none;font-size:18px;flex-shrink:0;">\ud83d\udcf1</a>` : '';
+    const wa  = tel ? `<a href="https://wa.me/${tel}" target="_blank" style="text-decoration:none;font-size:18px;flex-shrink:0;">ðŸ“±</a>` : '';
     return `<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);">
       <div style="flex:1;min-width:0;">
         <div style="font-size:13px;font-weight:700;">${r.nombre}</div>
@@ -1578,13 +1578,13 @@ function mostrarVencimientos(modo) {
 }
 function renderMora(lista) {
   if (!lista || !lista.length) {
-    document.getElementById('tablaMora').innerHTML = '<div class="empty" style="color:#10b981;">\u2705 Sin mora activa</div>';
+    document.getElementById('tablaMora').innerHTML = '<div class="empty" style="color:#10b981;">âœ… Sin mora activa</div>';
     return;
   }
   const rows = lista.map(r => {
     const color = r.maxDias > 90 ? '#ef4444' : r.maxDias > 30 ? '#f59e0b' : '#64748b';
     const tel   = formatTelWA(r.tel);
-    const wa    = tel ? `<a href="https://wa.me/${tel}" target="_blank" style="text-decoration:none;font-size:18px;">\ud83d\udcf1</a>` : '';
+    const wa    = tel ? `<a href="https://wa.me/${tel}" target="_blank" style="text-decoration:none;font-size:18px;">ðŸ“±</a>` : '';
     return `<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);">
       <div style="width:8px;height:8px;border-radius:50%;background:${color};flex-shrink:0;"></div>
       <div style="flex:1;min-width:0;">
@@ -1627,7 +1627,7 @@ function renderRentabilidad(lista, totalInv, totalGan) {
   rows += `<div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;margin-top:2px;border-top:2px solid var(--border);">
     <div>
       <div style="font-size:12px;font-weight:800;">TOTAL</div>
-      <div style="font-size:11px;color:var(--muted);">Precio: ${fmtGs(totalInv+totalGan)} \u2014 Costo: ${fmtGs(totalInv)}</div>
+      <div style="font-size:11px;color:var(--muted);">Precio: ${fmtGs(totalInv+totalGan)} â€” Costo: ${fmtGs(totalInv)}</div>
     </div>
     <div style="text-align:right;">
       <div style="font-size:15px;font-weight:800;color:#10b981;">${fmtGs(totalGan)}</div>
