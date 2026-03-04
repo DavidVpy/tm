@@ -313,17 +313,16 @@ async function showDashboard() {
   const stats = await getEstadisticasAPI();
   if (stats) {
     const set = (id, val) => { const el=document.getElementById(id); if(el) el.textContent=val; };
-    set('statVentasHoy',       stats.ventasHoy   || 0);
-    set('statVentasHoyMonto',  fmtGs(stats.totalVentasMes && stats.ventasHoy ? stats.totalVentasMes : 0));
-    set('statCobrosHoy',       stats.cobrosHoy   || 0);
-    set('statCobrosHoyMonto',  fmtGs(stats.totalCobrosHoy || 0));
-    set('statCuotasVencidas',  stats.cuotasVencidas || 0);
-    set('statVencidoMonto',    fmtGs(stats.montoVencido || 0));
-    set('statVentasMesNum',    stats.ventasMes   || 0);
-    set('statVentasMes',       fmtGs(stats.totalVentasMes || 0));
-    set('statCreditosActivos', stats.creditosActivos || 0);
-    set('statCarteraMonto',    fmtGs(stats.totalCreditosActivos || 0));
-    // Resalta cuotas vencidas en rojo si hay
+    set('statVentasHoy',      stats.ventasHoy    || 0);
+    set('statVentasHoyMonto', fmtGs(stats.totalVentasHoy || 0));
+    set('statCobrosHoy',      stats.cobrosHoy    || 0);
+    set('statCobrosHoyMonto', fmtGs(stats.totalCobrosHoy || 0));
+    set('statCuotasVencidas', stats.cuotasVencidas || 0);
+    set('statVencidoMonto',   fmtGs(stats.montoVencido || 0));
+    set('statVentasMesNum',   stats.ventasMes    || 0);
+    set('statVentasMes',      fmtGs(stats.totalVentasMes || 0));
+    set('statCreditosActivos',stats.creditosActivos || 0);
+    set('statCarteraMonto',   fmtGs(stats.totalCreditosActivos || 0));
     const vencEl = document.getElementById('statCuotasVencidas');
     if (vencEl && stats.cuotasVencidas > 0) vencEl.style.color = '#ef4444';
   }
